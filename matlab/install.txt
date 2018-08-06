@@ -1,0 +1,8 @@
+SdrBirdrec installation instructions:
+-------------------------------------
+
+1. download and install the uhd usb driver from: https://files.ettus.com/manual/page_transport.html#transport_usb_installwin
+2. download and install the Visual C++ Redistributable for Visual Studio 2015 from: https://www.microsoft.com/en-us/download/details.aspx?id=48145
+3. download and install the NI DAQmx newer (version 16.0 or newer) from: http://www.ni.com/nisearch/app/main/p/bot/no/ap/tech/lang/en/pg/1/sn/catnav:du,n8:3478.41.181.5495,ssnav:ndr/
+4. set the UHD_IMAGES_DIR environment variable to the SoapySdr/images folder. You can use the provided SetUHD_IMAGES_DIR.ps1 script or do it manually.
+5. add the SdrBidrec folder and the bin subfolder to the matlab path.

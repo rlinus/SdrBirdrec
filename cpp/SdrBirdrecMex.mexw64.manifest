@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">  
+  <dependency>  
+    <dependentAssembly>  
+      <assemblyIdentity type="Win32" name='SdrBirdrecMex.tbb' version='2017.0.2016.1004'></assemblyIdentity>  
+    </dependentAssembly>  
+  </dependency>  
+</assembly> 
