@@ -63,7 +63,6 @@ namespace SdrBirdrec
 			ControlNode &h;
 			shared_ptr<OutputFrame> outputFrame = nullptr;
 			size_t ctr = 0;
-			bool play_audio = false;
 		public:
 			mf_body(ControlNode &h) : h{ h } {}
 
@@ -91,9 +90,12 @@ namespace SdrBirdrec
 						if(h.monitorSettings.channel_number < h.params.SDR_ChannelCount)
 							outputFrame->output_signal = frame->demodulated_signals[h.monitorSettings.channel_number];
 
-						play_audio = h.monitorSettings.play_audio &&
+						if(h.monitorSettings.play_audio &&
 							h.monitorSettings.channel_number < h.params.SDR_ChannelCount &&
-							frame->signal_strengths[h.monitorSettings.channel_number] > h.monitorSettings.squelch;
+							frame->signal_strengths[h.monitorSettings.channel_number] > h.monitorSettings.squelch)
+						{
+							h.audioOutputActivitiy.try_put(outputFrame->output_signal, h.params.SDR_ChannelSampleRate);
+						}
 						break;
 					case MonitorSettings::ChannelType::daqmx:
 						outputFrame->channel_type = "daqmx";
@@ -108,15 +110,13 @@ namespace SdrBirdrec
 							}
 						}
 
-						play_audio = h.monitorSettings.play_audio && h.monitorSettings.channel_number < h.params.DAQmx_ChannelCount;
+						if(h.monitorSettings.play_audio && h.monitorSettings.channel_number < h.params.DAQmx_ChannelCount)
+						{
+							h.audioOutputActivitiy.try_put(outputFrame->output_signal, h.params.DAQmx_SampleRate);
+						}
 						break;
 				}
 				
-				if(play_audio)
-				{
-					//auto audioFrame = make_shared<vector<dsp_t>>(outputFrame->output_signal);
-					h.audioOutputActivitiy.try_put(outputFrame->output_signal, h.params.SDR_ChannelSampleRate);
-				}
 
 				get<1>(op).try_put(outputFrame);
 				get<0>(op).try_put(input);

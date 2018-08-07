@@ -1,6 +1,8 @@
 #pragma once
 #include <fftw3.h>
 #include <complex>
+#include <mutex>
+#include "fftwcpp_allocator.h"
 
 /**
 * C++11 wrapper for fftw
@@ -11,11 +13,121 @@ namespace fftwcpp
 {
 	using namespace std;
 
+	template<typename T>
+	using aligned_vector = std::vector<T, FftwAllocator<T>>;
+
 	enum Direction : int
 	{
 		forward = FFTW_FORWARD,
 		inverse = FFTW_BACKWARD
 	};
+
+	enum struct FftType
+	{
+		complex,
+		real2complex,
+		complex2real
+	};
+
+	template<typename T>
+	class Plan
+	{
+		Plan() { static_assert(false, "fftwcpp::Plan not defined for this type!"); }
+	};
+
+	template<>
+	class Plan<double>
+	{
+		size_t N;
+		fftw_plan fft_plan;
+	public:
+		Plan(size_t N, complex<double> *in, complex<double> *out, Direction direction = forward) : N{ N }
+		{
+			fft_plan = fftw_plan_dft_1d(static_cast<int>(N), (fftw_complex *)in, (fftw_complex *)out, static_cast<int>(direction), FFTW_MEASURE | FFTW_PRESERVE_INPUT);
+		}
+
+		Plan(size_t N, complex<double> *buf, Direction direction = forward) : N{ N }
+		{
+			fft_plan = fftw_plan_dft_1d(static_cast<int>(N), (fftw_complex *)buf, (fftw_complex *)buf, static_cast<int>(direction), FFTW_MEASURE);
+		}
+
+		~Plan() { fftw_destroy_plan(fft_plan); }
+		void execute() { fftw_execute(fft_plan); }
+	};
+
+	template<>
+	class Plan<float>
+	{
+	private:
+		size_t N;
+		fftwf_plan fft_plan;
+	public:
+		Plan(size_t N, complex<float> *in, complex<float> *out, Direction direction = forward) : N{ N }
+		{
+			fft_plan = fftwf_plan_dft_1d(static_cast<int>(N), (fftwf_complex *)in, (fftwf_complex *)out, static_cast<int>(direction), FFTW_MEASURE | FFTW_PRESERVE_INPUT);
+		}
+
+		Plan(size_t N, complex<float> *buf, Direction direction = forward) : N{ N }
+		{
+			fft_plan = fftwf_plan_dft_1d(static_cast<int>(N), (fftwf_complex *)buf, (fftwf_complex *)buf, static_cast<int>(direction), FFTW_MEASURE);
+		}
+
+		~Plan() { fftwf_destroy_plan(fft_plan); }
+		void execute() { fftwf_execute(fft_plan); }
+	};
+
+	template <FftType type, typename T>
+	class AdvancedPlan
+	{
+		AdvancedPlan() { static_assert(false, "fftwcpp::Fft: Fft not defined for this type!"); }
+	};
+
+	template<>
+	class AdvancedPlan<FftType::complex, double>
+	{
+	public:
+		
+		template<template<typename> typename AllocIn, template<typename> typename AllocOut>
+		AdvancedPlan(const vector<int> &n, int howmany,
+			vector< complex<double>, AllocIn<complex<double>> > &in, vector<int> inembed,
+			int istride, int idist,
+			vector< complex<double>, AllocOut<complex<double>> > &out, vector<int> onembed,
+			int ostride, int odist,
+			Direction direction, unsigned flags)
+		{
+			int rank = n.size();
+			int N = 1;
+			for(const auto &i : n) N *= i;
+
+			if(inembed.size() == 0)
+				inembed = n;
+
+			if(onembed.size() == 0)
+				onembed = n;
+
+			size_t isize = (N - 1)*istride + (howmany - 1)*idist + 1;
+			size_t osize = (N - 1)*ostride + (howmany - 1)*odist + 1;
+			if(in.size() < isize) throw "fftwcpp::AdvancedPlan(): in vector is to small";
+			if(out.size() < osize) throw "fftwcpp::AdvancedPlan(): out vector is to small";
+
+			fft_plan = fftw_plan_many_dft(rank, n.data(), howmany,
+				(fftw_complex *) in.data(), inembed.data(),
+				istride, idist,
+				(fftw_complex *) out.data(), onembed.data(),
+				ostride, odist,
+				static_cast<int>(direction), flags);
+
+			if(fft_plan == 0) throw std::runtime_error("fftwcpp::AdvancedPlan(): plan couldn't be created");
+		}
+
+		~AdvancedPlan() { fftw_destroy_plan(fft_plan); }
+
+		void inline execute(void) { fftw_execute(fft_plan); }
+
+	private:
+		fftw_plan fft_plan;
+	};
+
 
 	template <typename T, Direction direction>
 	class Fft

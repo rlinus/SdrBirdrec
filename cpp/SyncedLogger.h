@@ -6,6 +6,7 @@
 #include <thread>
 #include <memory>
 #include <atomic>
+#include <mutex>
 
 namespace SdrBirdrec
 {

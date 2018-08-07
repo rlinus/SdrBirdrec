@@ -11,12 +11,14 @@ namespace DspUtils
 {
 	using namespace std;
 
+	// Math constants
 	template<typename T>
 	constexpr T pi = T(3.1415926535897932385);
 
 	template<typename T>
 	constexpr T e = T(2.71828182845904523536);
 
+	// Types
 	template<typename T>
 	using cvec = std::valarray < std::complex<T> >;
 

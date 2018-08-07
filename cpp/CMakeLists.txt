@@ -16,7 +16,6 @@ find_package(Libsamplerate REQUIRED)
 find_package(PortAudio REQUIRED)
 find_package(NIDAQmx REQUIRED)
 
-
 # define mex target
 set(SRC_FILES SdrBirdrecMex.cpp mexUtils/mexUtils.cpp stdafx.cpp Topology.cpp UserInterface.cpp SdrBirdrecMex.mexw64.manifest)
 

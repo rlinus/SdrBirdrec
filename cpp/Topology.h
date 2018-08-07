@@ -5,6 +5,7 @@
 #include "DataFrame.h"
 #include "InitParams.h"
 #include "SoapyDevice.h"
+#include "SdrSourceActivity.h"
 #include "NodeFunctors.h"
 #include "ChannelExtractorNode.h"
 #include "ControlNode.h"

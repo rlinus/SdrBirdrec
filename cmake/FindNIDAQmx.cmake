@@ -10,14 +10,16 @@
 #  NIDAQmx_LIBRARIES
 #
 # Variables used:
-#  NIDAQmx_ROOT - path to "DAQmx ANSI C Dev" directory
+#  NIDAQmx_ExternalCompilerSupport_DIR - path to "ExternalCompilerSupport" directory
 
 if(NIDAQmx_ROOT)
-	find_path(NIDAQmx_INCLUDE_DIR NIDAQmx.h PATHS ${NIDAQmx_ROOT}/include DOC "The NIDAQmx include directory")
-	find_library(NIDAQmx_LIBRARY NAMES NIDAQmx PATHS ${NIDAQmx_ROOT}/lib/msvc ${NIDAQmx_ROOT}/lib64/msvc DOC "The NIDAQmx library")
+	file(TO_CMAKE_PATH ${NIDAQmx_ExternalCompilerSupport_DIR} NIDAQmx_ROOT)
+
+	find_path(NIDAQmx_INCLUDE_DIR NIDAQmx.h PATHS ${NIDAQmx_ExternalCompilerSupport_DIR}/C/include DOC "The NIDAQmx include directory")
+	find_library(NIDAQmx_LIBRARY NAMES NIDAQmx PATHS ${NIDAQmx_ExternalCompilerSupport_DIR}/C/lib64/msvc DOC "The NIDAQmx library")
 else(NIDAQmx_ROOT)
-	find_path(NIDAQmx_INCLUDE_DIR NIDAQmx.h PATHS "C:/Program Files (x86)/National Instruments/NI-DAQ/DAQmx ANSI C Dev/include" DOC "The NIDAQmx include directory")
-	find_library(NIDAQmx_LIBRARY NAMES NIDAQmx PATHS "C:/Program Files (x86)/National Instruments/NI-DAQ/DAQmx ANSI C Dev/lib/msvc" DOC "The NIDAQmx library")
+	find_path(NIDAQmx_INCLUDE_DIR NIDAQmx.h PATHS "C:/Program Files (x86)/National Instruments/Shared/ExternalCompilerSupport/C/include" DOC "The NIDAQmx include directory")
+	find_library(NIDAQmx_LIBRARY NAMES NIDAQmx PATHS "C:/Program Files (x86)/National Instruments/Shared/ExternalCompilerSupport/C/lib64/msvc" DOC "The NIDAQmx library")
 endif(NIDAQmx_ROOT)
 
 include(FindPackageHandleStandardArgs)
