@@ -63,7 +63,8 @@ guidata(hObject, handles);
 
 %init states
 handles.sdr_device_btn.UserData.sdr_args = [];
-handles.sdr_device_btn.UserData.sdr_handle = [];
+handles.sdr_device_btn.UserData.sdrBirdrecBackend = SdrBirdrecBackend();
+handles.channellist_btn.UserData.channel_list = {};
 
 handles.sdr_samplerate_pm.String = {'2.4', '4.8', '6', '7.2'};
 handles.daqmx_terminalconfig_pm.String = {'DAQmx_Val_Cfg_Default', 'DAQmx_Val_RSE', 'DAQmx_Val_NRSE', 'DAQmx_Val_Diff', 'DAQmx_Val_PseudoDiff'};
@@ -98,8 +99,7 @@ if exist('guistate.mat','file')
     handles.sdr_samplerate_pm.Value = state.sdr_samplerate_pm.Value;
     
     handles.channellist_btn.UserData.channel_list = state.channellist_btn.UserData.channel_list;
-else
-    handles.channellist_btn.UserData.channel_list = {};
+    handles.sdr_device_btn.UserData.sdr_args = state.sdr_device_btn.UserData.sdr_args;
 end
 
 if handles.daqmx_externalclock_cb.Value
@@ -134,8 +134,10 @@ global is_recording;
 global monitor_settings
 
 is_recording = false;
-monitor_settings.play = false;
-%monitor_settings.squelch_level = str2double(handles.squelchlevel_e.String);
+monitor_settings.play_audio = false;
+monitor_settings.squelch_level = str2double(handles.squelchlevel_e.String);
+monitor_settings.channel_type = 'sdr';
+monitor_settings.channel_number = 0;
 
 monitor_settings.show_spectrogram = false;
 monitor_settings.spectrogram_scaling = str2double(handles.sg_scaling_e.String);
@@ -289,8 +291,7 @@ if is_recording
     return
 end
 
-device_handles.sdr = handles.sdr_device_btn.UserData.sdr_handle; 
-
+settings.sdr_args = handles.sdr_device_btn.UserData.sdr_args;
 settings.AGC = handles.agc_cb.Value;
 settings.TunerGain = str2double(handles.tunergain_e.String);
 settings.AudioGain = str2double(handles.audiogain_e.String);
@@ -332,7 +333,7 @@ settings.channel_list = handles.channellist_btn.UserData.channel_list;
 %     return;
 % end
 
-if isempty(device_handles.sdr)
+if isempty(settings.sdr_args)
     errordlg('No SDR device is selected.')
     return;
 end
@@ -362,7 +363,7 @@ gui_handles.spectrogram_handle = handles_struct2.spectrogram_handle;
 drawnow;
 
 try
-    recorder(device_handles, settings,gui_handles);
+    recorder(handles.sdr_device_btn.UserData.sdrBirdrecBackend, settings,gui_handles);
 
     hObject.Enable = 'on';
     handles.stoprec_btn.Enable = 'off';
@@ -416,8 +417,8 @@ function play_btn_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global monitor_settings;
-monitor_settings.play = true;
-h = handles.sdr_device_btn.UserData.sdr_handle;
+monitor_settings.play_audio = true;
+h = handles.sdr_device_btn.UserData.sdrBirdrecBackend;
 if ~isempty(h) && h.isStreaming()
     h.setPlayAudio(true);
 end
@@ -428,8 +429,8 @@ function stop_btn_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global monitor_settings;
-monitor_settings.play = false;
-h = handles.sdr_device_btn.UserData.sdr_handle;
+monitor_settings.play_audio = false;
+h = handles.sdr_device_btn.UserData.sdrBirdrecBackend;
 if ~isempty(h) && h.isStreaming()
     h.setPlayAudio(false);
 end
@@ -490,6 +491,7 @@ state.udp_ip_e.String = handles.udp_ip_e.String;
 state.sdr_samplerate_pm.Value = handles.sdr_samplerate_pm.Value;
 
 state.channellist_btn.UserData.channel_list = handles.channellist_btn.UserData.channel_list;
+state.sdr_device_btn.UserData.sdr_args = handles.sdr_device_btn.UserData.sdr_args;
 
 
 save([path '/guistate.mat'],'state');
@@ -549,7 +551,7 @@ function squelchlevel_e_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of squelchlevel_e as a double
 global monitor_settings;
 monitor_settings.squelch_level = str2double(handles.squelchlevel_e.String);
-h = handles.sdr_device_btn.UserData.sdr_handle;
+h = handles.sdr_device_btn.UserData.sdrBirdrecBackend;
 if ~isempty(h) && h.isStreaming()
     h.setSquelch(str2double(handles.squelchlevel_e.String));
 end
@@ -781,16 +783,17 @@ function channels_btn_group_SelectionChangedFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global monitor_settings
 
-h = handles.sdr_device_btn.UserData.sdr_handle;
+h = handles.sdr_device_btn.UserData.sdrBirdrecBackend;
 if ~isempty(h) && h.isStreaming()
     if strfind(handles.channels_btn_group.SelectedObject.Tag, 'pb')
-        h.setChannelType('sdr');
+        monitor_settings.channel_type = 'sdr';
     elseif strfind(handles.channels_btn_group.SelectedObject.Tag, 'daqmx')
-        h.setChannelType('daqmx');
+        monitor_settings.channel_type = 'daqmx';
     else
         error('invalid tag');
     end
-    h.setChannelNumber(str2double(handles.channels_btn_group.SelectedObject.String));
+    monitor_settings.channel_number = str2double(handles.channels_btn_group.SelectedObject.String);
+    h.setChannel(monitor_settings.channel_type, monitor_settings.channel_number);
 end
 
 
@@ -803,9 +806,7 @@ hObject.Enable = 'off';
 global is_recording;
 global monitor_settings;
 hObject.UserData.sdr_args = getSdrDevice();
-if ~isempty(hObject.UserData.sdr_args)
-    hObject.UserData.sdr_handle = SdrBirdrecRecorder(hObject.UserData.sdr_args);
-end
+
 hObject.Enable = 'on';
 
 

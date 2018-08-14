@@ -5,9 +5,10 @@
 #include <tbb/flow_graph.h>
 
 #include "Types.h"
-#include "DataFrame.h"
+#include "SdrDataFrame.h"
+#include "MonitorDataFrame.h"
 #include "InitParams.h"
-#include "NodeFunctors.h"
+#include "AudioOutputActivity.h"
 
 namespace SdrBirdrec
 {
@@ -43,17 +44,17 @@ namespace SdrBirdrec
 			}
 		};
 
-		using sdr_frame_type = shared_ptr<DataFrame>;
-		using daqmx_frame_type = shared_ptr<vector<dsp_t>>;
-		using monitor_settings_type = Kwargs;
+		using SdrFrameType = shared_ptr<SdrDataFrame>;
+		using NIDAQmxFrameType = shared_ptr<vector<dsp_t>>;
+		using MonitorSettingsType = Kwargs;
 
-		using mf_input_type = tuple< sdr_frame_type, daqmx_frame_type >;
-		using mf_output_type = tuple< mf_input_type, shared_ptr<OutputFrame>>;
+		using mf_input_type = tuple< SdrFrameType, NIDAQmxFrameType >;
+		using mf_output_type = tuple< mf_input_type, shared_ptr<MonitorDataFrame>>;
 		using multifunction_node_type = multifunction_node< mf_input_type, mf_output_type >;
 
 		join_node<  mf_input_type, queueing > j;
 		multifunction_node_type mf;
-		queue_node< monitor_settings_type > monitor_settings_queue;
+		queue_node< MonitorSettingsType > monitor_settings_queue;
 
 		const InitParams params;
 		AudioOutputActivitiy &audioOutputActivitiy;
@@ -61,7 +62,7 @@ namespace SdrBirdrec
 
 		struct mf_body {
 			ControlNode &h;
-			shared_ptr<OutputFrame> outputFrame = nullptr;
+			shared_ptr<MonitorDataFrame> outputFrame = nullptr;
 			size_t ctr = 0;
 		public:
 			mf_body(ControlNode &h) : h{ h } {}
@@ -73,7 +74,7 @@ namespace SdrBirdrec
 				Kwargs options;
 				while(h.monitor_settings_queue.try_get(options)) h.monitorSettings.set(options);
 
-				outputFrame = make_shared<OutputFrame>();
+				outputFrame = make_shared<MonitorDataFrame>();
 
 				outputFrame->sdr_spectrum = frame->sdr_spectrum;
 				outputFrame->signal_strengths.assign(frame->signal_strengths.begin(), frame->signal_strengths.begin() + h.params.SDR_ChannelCount);
@@ -139,11 +140,11 @@ namespace SdrBirdrec
 			make_edge(j, mf);
 		}
 
-		receiver< sdr_frame_type > &sdr_frame_input_port{ input_port<0>(j) };
-		receiver< daqmx_frame_type > &daqmx_frame_input_port{ input_port<1>(j) };
-		receiver< monitor_settings_type > &monitor_settings_input_port{ monitor_settings_queue };
+		receiver< SdrFrameType > &sdrFrameInputPort{ input_port<0>(j) };
+		receiver< NIDAQmxFrameType > &daqmxFrameInputPort{ input_port<1>(j) };
+		receiver< MonitorSettingsType > &monitorSettingsInputPort{ monitor_settings_queue };
 
-		sender< mf_input_type > &file_writer_output_port{ output_port<0>(mf) };
-		sender< shared_ptr<OutputFrame> > &output_frame_output_port{ output_port<1>(mf) };
+		sender< mf_input_type > &fileWriterOutputPort{ output_port<0>(mf) };
+		sender< shared_ptr<MonitorDataFrame> > &outputFrameOutputPort{ output_port<1>(mf) };
 	};
 }

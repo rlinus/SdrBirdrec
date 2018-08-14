@@ -1,12 +1,8 @@
-function recorder(device_handles, settings, gui_handles)
+function recorder(sdrBirdrecBackend, settings, gui_handles)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
 %% variables
-udp_start_msg = 'sdrbirdrec::start';
-udp_stop_msg = 'sdrbirdrec::stop';
-
-%parameters
 sdrSpectrumPlotRate = 5; %how often to plot per second
 spectrogramPlotRate = 1;
 
@@ -14,7 +10,7 @@ fs_lf = 24000; %samplerate of output signal
 bw_lf = 20000; %two sideded bandwith of output signal
 bw_if = 200e3; %filter bandwith for decimater
 Decimator2_Factor = 10;
-%Decimator2FramesPerSdrFrame = 12;
+
 fs_if= fs_lf*Decimator2_Factor; %samplerate after first decimation
 
 switch settings.sdr_sample_rate_index
@@ -40,6 +36,9 @@ end
 
 fs_hf = fs_if*Decimator1_Factor; %sdr samplerate
 
+
+udp_start_msg = 'sdrbirdrec::start';
+udp_stop_msg = 'sdrbirdrec::stop';
 %% filenames
 params.LogFilename = [settings.outputfolder '\' settings.fn '_log.txt'];
 SdrChannelListFilename = [settings.outputfolder '\' settings.fn '_SdrChannelList.csv'];
@@ -103,13 +102,14 @@ else
             error('No profile for sdr_sample_rate_index=%i',settings.sdr_sample_rate_index);
     end
     lp_filter = designfilt('lowpassfir', 'DesignMethod', 'ls', 'FilterOrder', 250, 'SampleRate', fs_if, 'PassbandFrequency', bw_lf/2, 'StopbandFrequency', fs_lf/2);
-    hp_filter = designfilt('highpassiir', 'SampleRate', fs_lf, 'StopbandFrequency', 15, 'PassbandFrequency', 50, 'StopbandAttenuation', 80, 'PassbandRipple', 0.5);
+    %hp_filter = designfilt('highpassiir', 'SampleRate', fs_lf, 'StopbandFrequency', 15, 'PassbandFrequency', 50, 'StopbandAttenuation', 80, 'PassbandRipple', 0.5);
     
     save(filterfile, 'ddc_filter', 'lp_filter', 'hp_filter');
 end
 
 %% set params
 
+params.SDR_DeviceArgs = settings.sdr_args;
 params.MonitorRate = sdrSpectrumPlotRate;
 params.SDR_SampleRate = fs_hf;
 params.SDR_CenterFrequency = settings.sdr_center_freq * 1e6;
@@ -146,8 +146,6 @@ params.DAQmx_ClockInputTerminal = settings.daqmx_clockterminal;
 
 % save channel list
 writetable(settings.channel_list, SdrChannelListFilename)
-
-sdr_handle = device_handles.sdr;
 
 %spectrogram settings
 spectrogram_window = 512;
@@ -221,8 +219,12 @@ while is_recording
     end
     
     % init stream
-    sdr_handle.initStream(params);
+    sdrBirdrecBackend.initStream(params);
     hbuff.reset();
+    
+    sdrBirdrecBackend.setSquelch(monitor_settings.squelch_level);
+    sdrBirdrecBackend.setChannel(monitor_settings.channel_type, monitor_settings.channel_number);
+    sdrBirdrecBackend.setPlayAudio(monitor_settings.play_audio);
 
     gui_handles.status_txt.String = 'Recording...';
     drawnow;
@@ -233,10 +235,10 @@ while is_recording
 
     try
         i_frame = int64(0);
-        sdr_handle.startStream();
+        sdrBirdrecBackend.startStream();
         while is_recording && (~settings.split_files || i_frame < sdrSpectrumPlotRate * settings.file_duration * 60)
 
-            frame = sdr_handle.getData();
+            frame = sdrBirdrecBackend.getMonitorDataFrame();
 
             %plotting
             gui_handles.line_handle.YData = frame.sdr_spectrum;
@@ -258,7 +260,7 @@ while is_recording
             end
 
             if params.SDR_ExternalClock
-                if sdr_handle.isRefPLLlocked()
+                if sdrBirdrecBackend.isRefPLLlocked()
                     gui_handles.pll_txt.String = 'locked';
                 else
                     gui_handles.pll_txt.String = 'unlocked';
@@ -272,13 +274,13 @@ while is_recording
 
 
     catch ME
-        sdr_handle.stopStream();
+        sdrBirdrecBackend.stopStream();
         delete(texthandles);
         if settings.udp; fclose(udph); end
         ME.rethrow;
     end
 
-    sdr_handle.stopStream();
+    sdrBirdrecBackend.stopStream();
     
     if settings.udp; fprintf(udph, udp_stop_msg); end % send udp stop trigger 
     

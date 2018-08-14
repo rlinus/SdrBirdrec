@@ -49,7 +49,7 @@ function [args] = getSdrDevice()
         listbox.Visible = 'off';
         loading_txt.Visible = 'on'; 
         drawnow;
-        list = SdrBirdrecRecorder.findSdrDevices();
+        list = SdrBirdrecBackend.findSdrDevices();
         strlist = getStringList(list);
         listbox.String = strlist;
         listbox.Visible = 'on';

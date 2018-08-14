@@ -23,11 +23,12 @@
 //#include <algorithm>
 
 //#include "stdafx.h"
-#include "mexUtils/class_handle.h"
-#include "mexUtils/mexUtils.h"
+#include "class_handle.h"
+#include "mexUtils.h"
 
 #include "Types.h"
-#include "UserInterface.h"
+#include "SdrBirdrecEnvironment.h"
+#include "SdrBirdrecBackend.h"
 #include "UserParams.h"
 
 
@@ -57,31 +58,31 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		// static class methods
 		if (!strcmp("findSdrDevices", cmd)) {
 			if (nlhs > 1) throw std::invalid_argument("Unexpected arguments.");
-			plhs[0] = Cast::toMxArray(UserInterface::findSdrDevices());
+			plhs[0] = Cast::toMxArray(SdrBirdrecBackend::findSdrDevices());
 			return;
 		}
 
 		if (!strcmp("findAudioInputDevices", cmd)) {
 			if (nlhs > 1) throw std::invalid_argument("Unexpected arguments.");
-			plhs[0] = Cast::toMxArray(UserInterface::findAudioInputDevices());
+			plhs[0] = Cast::toMxArray(SdrBirdrecBackend::findAudioInputDevices());
 			return;
 		}
 
 		if (!strcmp("findAudioOutputDevices", cmd)) {
 			if (nlhs > 1) throw std::invalid_argument("Unexpected arguments.");
-			plhs[0] = Cast::toMxArray(UserInterface::findAudioOutputDevices());
+			plhs[0] = Cast::toMxArray(SdrBirdrecBackend::findAudioOutputDevices());
 			return;
 		}
 
 		if(!strcmp("findNIDAQmxDevices", cmd)) {
 			if(nlhs > 1) throw std::invalid_argument("Unexpected arguments.");
-			plhs[0] = Cast::toMxArray(UserInterface::findNIDAQmxDevices());
+			plhs[0] = Cast::toMxArray(SdrBirdrecBackend::findNIDAQmxDevices());
 			return;
 		}
 
 		if (!strcmp("staticTest", cmd)) {
 			if (nlhs < 0 || nrhs < 1) throw std::invalid_argument("Unexpected arguments.");
-			plhs[0] = Cast::toMxArray(UserInterface::staticTest());
+			plhs[0] = Cast::toMxArray(SdrBirdrecBackend::staticTest());
 			return;
 		}
 
@@ -91,13 +92,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			if (nlhs != 1)
 				throw std::invalid_argument("One output expected.");
 
-			UserInterface* obj;
-			if (nrhs == 1) obj = new UserInterface();
-			else if (nrhs == 2) obj = new UserInterface(Cast::fromMxArray<Kwargs>(prhs[1]));
+			SdrBirdrecBackend* obj;
+			if (nrhs == 1) obj = new SdrBirdrecBackend();
 			else throw std::invalid_argument("Unexpected arguments.");
 
 			// Return a handle to a new C++ instance
-			plhs[0] = convertPtr2Mat<UserInterface>(obj);
+			plhs[0] = convertPtr2Mat<SdrBirdrecBackend>(obj);
 			return;
 		}
 
@@ -108,12 +108,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		// Delete
 		if (!strcmp("delete", cmd)) {
 			// Destroy the C++ object
-			destroyObject<UserInterface>(prhs[1]);
+			destroyObject<SdrBirdrecBackend>(prhs[1]);
 			return;
 		}
 
 		// Get the class instance pointer from the second input
-		UserInterface *sdrBirdrecMex = convertMat2Ptr<UserInterface>(prhs[1]);
+		SdrBirdrecBackend *sdrBirdrecBackend = convertMat2Ptr<SdrBirdrecBackend>(prhs[1]);
 
 		if (!strcmp("initStream", cmd)) {
 			if (nlhs < 0 || nrhs < 3) throw std::invalid_argument("Unexpected arguments.");
@@ -122,6 +122,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 			UserParams params;
 			mxArray * fieldptr;
+
+			fieldptr = mxGetField(mxParams, 0, "SDR_DeviceArgs");
+			if(fieldptr) params.SDR_DeviceArgs = Cast::fromMxArray<Kwargs>(fieldptr);
 
 			fieldptr = mxGetField(mxParams, 0, "DataFile_SamplePrecision");
 			if(fieldptr) params.DataFile_SamplePrecision = Cast::fromMxArray<std::string>(fieldptr);
@@ -278,67 +281,84 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			fieldptr = mxGetField(mxParams, 0, "DAQmx_AILowpassCutoffFreq");
 			if(fieldptr) params.DAQmx_AILowpassCutoffFreq = Cast::fromMxArray<double>(fieldptr);
 
-			sdrBirdrecMex->initStream(params);
+			sdrBirdrecBackend->initStream(params);
 			return;
 		}
 
 		if(!strcmp("startStream", cmd)) {
 			if(nlhs < 0 || nrhs < 2) throw std::exception("Unexpected arguments.");
-			sdrBirdrecMex->startStream();
+			sdrBirdrecBackend->startStream();
 			return;
 		}
 
 		if (!strcmp("stopStream", cmd)) {
 			if (nlhs < 0 || nrhs < 2) throw std::exception("Unexpected arguments.");
-			sdrBirdrecMex->stopStream();
+			sdrBirdrecBackend->stopStream();
 			return;
 		}
 
-		if (!strcmp("getData", cmd)) {
+		if (!strcmp("getMonitorDataFrame", cmd)) {
 			if (nlhs < 0 || nrhs < 2) throw std::invalid_argument("Unexpected arguments.");
-			plhs[0] = sdrBirdrecMex->getData();
+			shared_ptr<MonitorDataFrame> frame = sdrBirdrecBackend->getMonitorDataFrame();
+
+			plhs[0] = mexUtils::Cast::toMxStruct(
+				"sdr_spectrum", frame->sdr_spectrum,
+				"signal_strengths", frame->signal_strengths,
+				"carrier_frequencies", frame->carrier_frequencies,
+				"receive_frequencies", frame->receive_frequencies,
+				"output_signal", frame->output_signal,
+				"channel_type", frame->channel_type,
+				"channel_number", frame->channel_number
+			);
+
 			return;
 		}
 
 		if (!strcmp("isStreaming", cmd)) {
 			if (nlhs < 0 || nrhs < 2) throw std::invalid_argument("Unexpected arguments.");
-			plhs[0] = Cast::toMxArray(sdrBirdrecMex->isStreaming());
+			plhs[0] = Cast::toMxArray(sdrBirdrecBackend->isStreaming());
 			return;
 		}
 
 		if (!strcmp("setSquelch", cmd)) {
 			if (nlhs < 0 || nrhs < 3) throw std::invalid_argument("Unexpected arguments.");
-			sdrBirdrecMex->setSquelch(Cast::fromMxArray<double>(prhs[2]));
+			sdrBirdrecBackend->setSquelch(Cast::fromMxArray<double>(prhs[2]));
+			return;
+		}
+
+		if(!strcmp("setChannel", cmd)) {
+			if(nlhs < 0 || nrhs < 4) throw std::invalid_argument("Unexpected arguments.");
+			sdrBirdrecBackend->setChannel(Cast::fromMxArray<string>(prhs[2]), Cast::fromMxArray<size_t>(prhs[3]));
 			return;
 		}
 
 		if (!strcmp("setChannelNumber", cmd)) {
 			if (nlhs < 0 || nrhs < 3) throw std::invalid_argument("Unexpected arguments.");
-			sdrBirdrecMex->setChannelNumber(Cast::fromMxArray<size_t>(prhs[2]));
+			sdrBirdrecBackend->setChannelNumber(Cast::fromMxArray<size_t>(prhs[2]));
 			return;
 		}
 
 		if(!strcmp("setChannelType", cmd)) {
 			if(nlhs < 0 || nrhs < 3) throw std::invalid_argument("Unexpected arguments.");
-			sdrBirdrecMex->setChannelType(Cast::fromMxArray<string>(prhs[2]));
+			sdrBirdrecBackend->setChannelType(Cast::fromMxArray<string>(prhs[2]));
 			return;
 		}
 
 		if (!strcmp("setPlayAudio", cmd)) {
 			if (nlhs < 0 || nrhs < 3) throw std::invalid_argument("Unexpected arguments.");
-			sdrBirdrecMex->setPlayAudio(Cast::fromMxArray<bool>(prhs[2]));
+			sdrBirdrecBackend->setPlayAudio(Cast::fromMxArray<bool>(prhs[2]));
 			return;
 		}
 
 		if (!strcmp("isRefPLLlocked", cmd)) {
 			if (nlhs < 0 || nrhs < 2) throw std::invalid_argument("Unexpected arguments.");
-			plhs[0] = Cast::toMxArray(sdrBirdrecMex->isRefPLLlocked());
+			plhs[0] = Cast::toMxArray(sdrBirdrecBackend->isRefPLLlocked());
 			return;
 		}
 
 		if(!strcmp("test", cmd)) {
 			if(nlhs < 0 || nrhs < 2) throw std::invalid_argument("Unexpected arguments.");
-			plhs[0] = Cast::toMxArray(sdrBirdrecMex->test());
+			plhs[0] = Cast::toMxArray(sdrBirdrecBackend->test());
 			return;
 		}
 

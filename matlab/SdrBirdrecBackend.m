@@ -1,19 +1,19 @@
-%% SdrBirdrecRecorder multichannel sdr and NI-DAQmx recorder
+%% SdrBirdrecBackend multichannel sdr and NI-DAQmx recorder
 %
 
-classdef SdrBirdrecRecorder < handle
+classdef SdrBirdrecBackend < handle
     properties (SetAccess = private, Hidden = true)
         objectHandle; % Handle to the underlying C++ class instance
     end
     methods
         %% Constructor
-        % constructs a new SdrBirdrecRecorder handle object.
+        % constructs a new SdrBirdrecBackend handle object.
         %
         % sdr_device:   a struct that identifies an sdr device. Use one of
         %               the elements returned by 
-        %               SdrBirdrecRecorder.findSdrDevices()
-        function this = SdrBirdrecRecorder(sdr_device)
-            this.objectHandle = SdrBirdrecMex('new', sdr_device);
+        %               SdrBirdrecBackend.findSdrDevices()
+        function this = SdrBirdrecBackend()
+            this.objectHandle = SdrBirdrecMex('new');
         end
         
         %% Destructor
@@ -151,7 +151,7 @@ classdef SdrBirdrecRecorder < handle
             SdrBirdrecMex('stopStream', this.objectHandle);
         end
         
-        %% Get Data
+        %% getMonitorDataFrame
         % a blocking call that returns a struct of monitor data.
         % The return value has the following fields:
         % sdr_spectrum: a log power spectrum of the sdr data input at the
@@ -168,8 +168,8 @@ classdef SdrBirdrecRecorder < handle
         %                   frequencies.
         % output_signal: a vector containing the current frame of one recorded
         %                channel (sdr or daqmx). 
-        function x = getData(this)
-            x = SdrBirdrecMex('getData', this.objectHandle);
+        function x = getMonitorDataFrame(this)
+            x = SdrBirdrecMex('getMonitorDataFrame', this.objectHandle);
         end
         
         %% isStreaming
@@ -178,12 +178,23 @@ classdef SdrBirdrecRecorder < handle
             x = SdrBirdrecMex('isStreaming', this.objectHandle);
         end
         
-        %% SetSquelch
+        %% setSquelch
         % set the squelch for the audio output of an sdr channel. If the
         % current signal strength is below squelch, the audio output is
         % interrupted.
         function setSquelch(this, squelch)
             SdrBirdrecMex('setSquelch', this.objectHandle, squelch);
+        end
+        
+        %% setChannel
+        % selects the channel type and channel number of the channel which is streamed to audio 
+        % output and which is returned by getData.
+        % channel_type:     possible values are:
+        %                       'sdr': to stream an sdr channel
+        %                       'daqmx': to stream an NI-DAQmx channel
+        % channel_number:   channel number starting from 0
+        function setChannel(this, channel_type, channel_number)
+            SdrBirdrecMex('setChannel', this.objectHandle, channel_type, channel_number);
         end
         
         %% setChannelNumber

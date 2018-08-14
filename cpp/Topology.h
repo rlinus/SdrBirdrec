@@ -2,11 +2,13 @@
 #include <memory>
 #include <tbb/flow_graph.h>
 #include "Types.h"
-#include "DataFrame.h"
+#include "SdrDataFrame.h"
+#include "MonitorDataFrame.h"
 #include "InitParams.h"
-#include "SoapyDevice.h"
 #include "SdrSourceActivity.h"
-#include "NodeFunctors.h"
+#include "NIDAQmxSourceActivitiy.h"
+#include "AudioOutputActivity.h"
+#include "FileWriterNodeBody.h"
 #include "ChannelExtractorNode.h"
 #include "ControlNode.h"
 #include "SyncedLogger.h"
@@ -19,8 +21,7 @@ namespace SdrBirdrec
 	class Topology
 	{
 	public:
-		Topology(const InitParams &params, Kwargs args) :
-			sdr_device{ args },
+		Topology(const InitParams &params) :
 			params{ params },
 			isStreamActiveFlag{ false },
 			logger{ params.LogFilename }
@@ -51,61 +52,57 @@ namespace SdrBirdrec
 
 		void activate() 
 		{ 
-			if(isStreamActiveFlag) throw logic_error("Topology: Can't activate stream, because it is already active.");
+			if(isStreamActiveFlag) throw logic_error("Topology: Can't activate stream, because it's already active.");
 
 			sdrSourceActivity.activate();
 			nIDAQmxSourceActivitiy.activate();
 			isStreamActiveFlag = true;
 		}
 
-		shared_ptr<OutputFrame> getData(void)
+		shared_ptr<MonitorDataFrame> getMonitorDataFrame(void)
 		{
-			shared_ptr<OutputFrame> frame{ nullptr };
-			out_overwrite_node.try_get(frame);
+			shared_ptr<MonitorDataFrame> frame{ nullptr };
+			outOverwriteNode.try_get(frame);
 			while (frame == lastOutputFrame)
 			{
 				this_thread::yield();
-				out_overwrite_node.try_get(frame);
+				outOverwriteNode.try_get(frame);
 			}
 
 			lastOutputFrame = frame;
 			return frame;
 		}
 
-		bool isRefPLLlocked(void)
-		{
-			SoapySDR::ArgInfo ref_locked_args = sdr_device.handle->getSensorInfo("ref_locked");
-			return ref_locked_args.value.compare("true") == 0;
-		}
+		bool isRefPLLlocked(void) { return sdrSourceActivity.isRefPLLlocked(); }
 
-		void setMonitorOptions(const Kwargs &args) { controlNode.monitor_settings_input_port.try_put(args); }
+		void setMonitorOptions(const Kwargs &args) { controlNode.monitorSettingsInputPort.try_put(args); }
 		bool isStreamActive() { return isStreamActiveFlag; }
 
 	private:
 		atomic<bool> isStreamActiveFlag;
 
-		SoapyDevice sdr_device;
+		//SoapyDevice sdr_device;
 		const InitParams params;
 		SyncedLogger logger;
-		shared_ptr<OutputFrame> lastOutputFrame = nullptr;
+		shared_ptr<MonitorDataFrame> lastOutputFrame = nullptr;
 		graph g;
 
 		NIDAQmxSourceActivitiy nIDAQmxSourceActivitiy{ params, logger };
-		SdrSourceActivity sdrSourceActivity{ params, sdr_device, logger };	
+		SdrSourceActivity sdrSourceActivity{ params, logger };	
 		AudioOutputActivitiy audioOutputActivitiy{ 1, params.AudioOutput_DeviceIndex };
 
 		ChannelExtractorNode channelExtractorNode{ g, params };
 		ControlNode controlNode{ g, params, audioOutputActivitiy };
-		function_node< typename NodeFunctors::file_writer::input_type > file_writer_node{ g, serial,  NodeFunctors::file_writer(params) };
-		overwrite_node< shared_ptr<OutputFrame> > out_overwrite_node{ g };
+		function_node< typename FileWriterNodeBody::input_type > fileWriterNode{ g, serial,  FileWriterNodeBody(params) };
+		overwrite_node< shared_ptr<MonitorDataFrame> > outOverwriteNode{ g };
 
 		void make_edges()
 		{
 			make_edge(sdrSourceActivity, channelExtractorNode);
-			make_edge(channelExtractorNode, controlNode.sdr_frame_input_port);
-			make_edge(nIDAQmxSourceActivitiy, controlNode.daqmx_frame_input_port);
-			make_edge(controlNode.file_writer_output_port, file_writer_node);
-			make_edge(controlNode.output_frame_output_port, out_overwrite_node);
+			make_edge(channelExtractorNode, controlNode.sdrFrameInputPort);
+			make_edge(nIDAQmxSourceActivitiy, controlNode.daqmxFrameInputPort);
+			make_edge(controlNode.fileWriterOutputPort, fileWriterNode);
+			make_edge(controlNode.outputFrameOutputPort, outOverwriteNode);
 		}
 	};
 

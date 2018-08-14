@@ -1,2 +1,13 @@
 .*
 !/.gitignore
+
+
+# Windows default autosave extension
+*.asv
+
+#ignore mat files in matlab folder (guistate.mat, filter*.mat)
+#matlab/*.mat
+
+#ignore cpp/unusedStuff folder
+cpp/unusedStuff
+

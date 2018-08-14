@@ -1,42 +1,30 @@
 #pragma once
 #include <memory>
+#include <string>
 #include <SoapySDR/Logger.hpp>
 #include <SoapySDR/Modules.hpp>
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Formats.hpp>
-#include <tbb/task_scheduler_init.h>
 #include <portaudio.h>
 
 #include "Topology.h"
-#include "DataFrame.h"
-#include "mexUtils/mexUtils.h"
-#include <mex.h>
+#include "SdrDataFrame.h"
+#include "MonitorDataFrame.h"
 #include "InitParams.h"
-#include "SoapyDevice.h"
 
 namespace SdrBirdrec
 {
 	using namespace std;
 
-	struct SdrBirdrecEnvironment
-	{
-		SdrBirdrecEnvironment();
-		~SdrBirdrecEnvironment();
-		static void SoapySDRLogHandler(const SoapySDR::LogLevel logLevel, const char *message) { std::cout << message << std::endl;}
-
-		tbb::task_scheduler_init init;
-	};
-
-	class UserInterface
+	class SdrBirdrecBackend
 	{
 	public:
-		UserInterface(const Kwargs & args = Kwargs()):
-			args { args }
-		{
-			//sdr_device.setupRxStream(std::is_same<SdrBirdrec::dsp_t, double>::value ? std::string(SOAPY_SDR_CF64) : std::string(SOAPY_SDR_CF32));
-		}
+		//SdrBirdrecBackend()
+		//{
+		//	//sdr_device.setupRxStream(std::is_same<SdrBirdrec::dsp_t, double>::value ? std::string(SOAPY_SDR_CF64) : std::string(SOAPY_SDR_CF32));
+		//}
 
-		static std::vector<Kwargs> findSdrDevices(const Kwargs & args = Kwargs()) { return SoapySDR::Device::enumerate(args); }
+		static std::vector<Kwargs> findSdrDevices(const Kwargs & args = Kwargs());
 		static std::vector<Kwargs> findAudioInputDevices();
 		static std::vector<Kwargs> findAudioOutputDevices();
 		static std::vector<Kwargs> findNIDAQmxDevices();
@@ -45,10 +33,10 @@ namespace SdrBirdrec
 		void initStream(const InitParams &params)
 		{
 #ifdef VERBOSE
-			std::cout << "UserInterface::initStream()" << endl;
+			std::cout << "SdrBirdrecBackend::initStream()" << endl;
 #endif
 			if(topology && topology->isStreamActive()) throw runtime_error("SdrBirdrec: Stream is active. Call stopStream before reinitalisation.");
-			topology = std::make_unique<Topology>(params, args);
+			topology = std::make_unique<Topology>(params);
 		}
 
 		void startStream()
@@ -56,7 +44,7 @@ namespace SdrBirdrec
 			if(!topology) throw runtime_error("SdrBirdrec: Stream is not initalized.");
 			if(topology->isStreamActive()) throw runtime_error("SdrBirdrec: Stream is already active.");
 #ifdef VERBOSE
-			std::cout << "UserInterface::startStream()" << endl;
+			std::cout << "SdrBirdrecBackend::startStream()" << endl;
 #endif
 			topology->activate(); 
 		}
@@ -67,28 +55,23 @@ namespace SdrBirdrec
 			topology = nullptr;
 		}
 
-		mxArray* getData()
+		shared_ptr<MonitorDataFrame> getMonitorDataFrame()
 		{
 			if(!topology || !topology->isStreamActive()) throw runtime_error("Stream is not active. Can't get data.");
-			shared_ptr<OutputFrame> frame = topology->getData();
-
-			mxArray* m = mexUtils::Cast::toMxStruct(
-				"sdr_spectrum", frame->sdr_spectrum,
-				"signal_strengths", frame->signal_strengths,
-				"carrier_frequencies", frame->carrier_frequencies,
-				"receive_frequencies", frame->receive_frequencies,
-				"output_signal", frame->output_signal,
-				"channel_type", frame->channel_type,
-				"channel_number", frame->channel_number
-			);
-
-			return m;
+			return topology->getMonitorDataFrame();
 		}
 
 		void setSquelch(double squelch)
 		{
 			if (!topology) throw runtime_error("Stream is not initialised. Can't set option.");
 			Kwargs args = { {"squelch"s, to_string(squelch)} };
+			topology->setMonitorOptions(args);
+		}
+
+		void setChannel(string channel_type, size_t channel_number)
+		{
+			if(!topology) throw runtime_error("Stream is not initialised. Can't set option.");
+			Kwargs args = { { "channel_number"s, to_string(channel_number) }, { "channel_type"s, channel_type } };
 			topology->setMonitorOptions(args);
 		}
 
@@ -115,14 +98,37 @@ namespace SdrBirdrec
 
 		bool isStreaming() { return topology && topology->isStreamActive(); };
 
-		std::vector<double> test()
+		std::vector<std::complex<dsp_t>> test(const Kwargs &args = Kwargs())
 		{
+			int flags = 0;
+			long long timeNs = 0;
+			int nread = 0;
+
 			SoapyDevice sdr_device(args);
 			sdr_device.setupRxStream(std::is_same<SdrBirdrec::dsp_t, double>::value ? std::string(SOAPY_SDR_CF64) : std::string(SOAPY_SDR_CF32));
+			size_t streamMTUsize = sdr_device.getRxStreamMTU();
+			std::vector<std::complex<dsp_t>> buffer(streamMTUsize);
+			void* buf_ptr = (void*)buffer.data();
+
 			sdr_device.activateRxStream();
+			nread = sdr_device.readStream(&buf_ptr, streamMTUsize, flags, timeNs);
+			cout << "nread: " << nread << endl;
+
+			nread = sdr_device.readStream(&buf_ptr, streamMTUsize, flags, timeNs);
+			cout << "nread: " << nread << endl;
+			sdr_device.deactivateRxStream();
+			sdr_device.closeRxStream();
+			sdr_device.setupRxStream(std::is_same<SdrBirdrec::dsp_t, double>::value ? std::string(SOAPY_SDR_CF64) : std::string(SOAPY_SDR_CF32));
+
+			sdr_device.activateRxStream();
+			nread = sdr_device.readStream(&buf_ptr, streamMTUsize, flags, timeNs);
+			cout << "nread: " << nread << endl;
+
+			nread = sdr_device.readStream(&buf_ptr, streamMTUsize, flags, timeNs);
+			cout << "nread: " << nread << endl;
 			sdr_device.deactivateRxStream();
 			//return sdr_device.handle->listSampleRates(SOAPY_SDR_RX, 0);	
-			return {};
+			return buffer;
 		}
 
 		bool isRefPLLlocked()
@@ -137,9 +143,6 @@ namespace SdrBirdrec
 
 
 	private:
-		Kwargs args;
-		//SoapyDevice sdr_device;
-
 		std::unique_ptr<Topology> topology;
 	};
 }

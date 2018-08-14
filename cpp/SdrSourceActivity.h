@@ -9,6 +9,7 @@
 #include <atomic>
 #include <exception>
 #include <stdexcept>
+#include <chrono>
 
 #include <tbb/tbb.h>
 #include <SoapySDR/Device.hpp>
@@ -18,7 +19,7 @@
 #include "SoapyDevice.h"
 #include "ObjectPool.h"
 #include "SyncedLogger.h"
-
+#include "SdrDataFrame.h"
 #include "Types.h"
 
 namespace SdrBirdrec
@@ -26,7 +27,7 @@ namespace SdrBirdrec
 	using namespace std;
 	using namespace tbb::flow;
 
-	class SdrSourceActivity : public sender<shared_ptr<DataFrame>>
+	class SdrSourceActivity : public sender<shared_ptr<SdrDataFrame>>
 	{
 	private:
 		template <typename T> struct RingBuffer
@@ -87,28 +88,31 @@ namespace SdrBirdrec
 		atomic<bool> isStreamActiveFlag = false;
 		atomic<bool> isStreamTerminatedFlag = true;
 		const InitParams params;
-		SoapyDevice &sdr_device;
+		SoapyDevice sdr_device;
 		unique_ptr< RingBuffer<RingBufferElement> > ringBuffer;
-		ObjectPool< DataFrame > bufferPool;
+		ObjectPool< SdrDataFrame > bufferPool;
 		std::thread receiverThread;
 		std::thread serviceThread;
 		long long activationTimeNs = 0;
 		successor_type* successor = nullptr;
+
+		const std::chrono::duration<double> externalClockLockTimeout{ 2.0 }; //how long to wait for pll lock
 	public:
 
-		SdrSourceActivity(const InitParams &params, SoapyDevice &sdr_device, SyncedLogger &logger) :
+		SdrSourceActivity(const InitParams &params, SyncedLogger &logger) :
 			logger{ logger },
 			poolSize{ size_t(round(5 * params.SDR_SampleRate / params.SDR_FrameSize)) },
 			params{ params },
-			sdr_device{ sdr_device },
-			bufferPool{ poolSize, DataFrame(params) }
+			sdr_device{ params.SDR_DeviceArgs },
+			bufferPool{ poolSize, SdrDataFrame(params) }
 		{
 #ifdef VERBOSE
 			std::cout << "SdrSourceActivity()" << endl;
 #endif
 
 			//setup sdr device
-			if(params.SDR_AGC && !sdr_device.handle->hasGainMode(SOAPY_SDR_RX, 0)) throw invalid_argument("SdrSourceActivity: AGC is not supported on this device"); //hasGainMode() always returns false for UHD devices, even though they support AGC
+			
+			//if(params.SDR_AGC && !sdr_device.handle->hasGainMode(SOAPY_SDR_RX, 0)) throw invalid_argument("SdrSourceActivity: AGC is not supported on this device"); //hasGainMode() always returns false for UHD devices, even though they support AGC
 			sdr_device.handle->setGainMode(SOAPY_SDR_RX, 0, params.SDR_AGC);
 
 			if(!params.SDR_AGC)
@@ -136,19 +140,24 @@ namespace SdrBirdrec
 			{
 				if(find(clockSources.cbegin(), clockSources.cend(), "external"s) == clockSources.cend()) throw invalid_argument("SdrSourceActivity: no external clock supported on this device");
 				sdr_device.handle->setClockSource("external"s);
+
+				//wait till pll is locked
+				bool ref_locked = false;
+				auto start = std::chrono::system_clock::now();
+				std::chrono::duration<double> diff{ 0.0 };
+				while(!ref_locked && diff < externalClockLockTimeout)
+				{
+					SoapySDR::ArgInfo ref_locked_args = sdr_device.handle->getSensorInfo("ref_locked");
+					ref_locked = ref_locked_args.value.compare("true") == 0;
+					diff = std::chrono::system_clock::now() - start;
+				}
+				if(!ref_locked) throw runtime_error("SdrSourceActivity: The PLL could not lock to the external clock (timeout).");
+				
 			}
 			else if(find(clockSources.cbegin(), clockSources.cend(), "internal"s) != clockSources.cend())
 			{
 				sdr_device.handle->setClockSource("internal"s);
 			}
-			//std::cout << "ClockSource: " << sdr_device.handle->getClockSource() << std::endl;
-			//std::vector<std::string> sensor_list = sdr_device.handle->listSensors();
-			//for(auto&& i : sensor_list)
-			//{
-			//	std::cout << "Sensor: " << i << std::endl;
-			//}
-			/*SoapySDR::ArgInfo ref_locked_args = sdr_device.handle->getSensorInfo("ref_locked");
-			std::cout << "ref_locked: " << ref_locked_args.value << std::endl;*/
 
 			std::vector<std::string> timeSources = sdr_device.handle->listTimeSources();
 			if(params.SDR_StartOnTrigger)
@@ -205,19 +214,20 @@ namespace SdrBirdrec
 
 			//timing
 			int activateFlags = 0;
+			sdr_device.handle->setHardwareTime(0);
 
 			if(params.SDR_StartOnTrigger)
 			{
-				sdr_device.handle->setHardwareTime(0);
+				//sdr_device.handle->setHardwareTime(0);
 				activateFlags = SOAPY_SDR_HAS_TIME;
 				activationTimeNs = 24 * 3600 * 1e9;
 				sdr_device.handle->setHardwareTime(activationTimeNs, "PPS"); //hack to activate stream on next PPS: set time to value far from now on next pps, activate stream at that time 
 			}
-			else if(sdr_device.handle->hasHardwareTime())
-			{
-				activationTimeNs = 500e6;
-				sdr_device.handle->setHardwareTime(0);
-			}
+			//else if(sdr_device.handle->hasHardwareTime())
+			//{
+			//	activationTimeNs = 500e6;
+			//	sdr_device.handle->setHardwareTime(0);
+			//}
 
 			//activate sdr stream
 			if(sdr_device.activateRxStream(activateFlags, activationTimeNs) != 0) throw std::runtime_error("A Problem occured. Sdr stream couldn't be activated.");
@@ -245,6 +255,12 @@ namespace SdrBirdrec
 		bool isStreamActive() { return isStreamActiveFlag; }
 		bool isStreamTerminated() { return isStreamTerminatedFlag; }
 
+		bool isRefPLLlocked(void)
+		{
+			SoapySDR::ArgInfo ref_locked_args = sdr_device.handle->getSensorInfo("ref_locked");
+			return ref_locked_args.value.compare("true") == 0;
+		}
+
 	private:
 		static void receiverThreadFunc(SdrSourceActivity* h)
 		{
@@ -257,7 +273,7 @@ namespace SdrBirdrec
 
 				size_t ctr = 0;
 				const size_t streamMTUsize = h->streamMTUsize;
-				const size_t activationTimeNs = h->activationTimeNs;
+				//const size_t activationTimeNs = h->activationTimeNs;
 
 
 				//sdr loop
@@ -269,7 +285,7 @@ namespace SdrBirdrec
 					void* buf_ptr = (void*)ringBufferElement.buf.data();
 					ringBufferElement.flags = 0;
 					ringBufferElement.nread = h->sdr_device.readStream(&buf_ptr, streamMTUsize, ringBufferElement.flags, ringBufferElement.timeNs, 600000000);
-					ringBufferElement.timeNs -= activationTimeNs;
+					//ringBufferElement.timeNs -= activationTimeNs;
 					h->ringBuffer->push_back();
 
 					++ctr;
@@ -295,7 +311,7 @@ namespace SdrBirdrec
 
 				size_t outputBufferPos = 0;
 				const size_t outputBufferSize = h->params.SDR_FrameSize;
-				shared_ptr<DataFrame> frame = h->bufferPool.acquire();
+				shared_ptr<SdrDataFrame> frame = h->bufferPool.acquire();
 				if(!frame) runtime_error("no buffer available");
 				frame->index = 0;
 
@@ -333,7 +349,7 @@ namespace SdrBirdrec
 						stringstream strstream;
 						if(ringBufferElement.flags & SOAPY_SDR_HAS_TIME)
 						{
-							strstream << "SdrSourceActivity: dropped " << numDroppedSamples << " samples at time " << ringBufferElement.timeNs / 1e9 << "s." << endl;
+							strstream << "SdrSourceActivity: dropped " << numDroppedSamples << " samples at time " << (ringBufferElement.timeNs - h->activationTimeNs) / 1e9 << "s." << endl;
 						}
 						else
 						{

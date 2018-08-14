@@ -8,10 +8,10 @@ namespace SdrBirdrec
 {
 	using namespace std;
 
-	struct DataFrame
+	struct SdrDataFrame
 	{
 	public:
-		DataFrame(const InitParams &params) :
+		SdrDataFrame(const InitParams &params) :
 			sdr_signal(params.SDR_FrameSize),
 			sdr_spectrum(params.Decimator1_Nfft),
 			demodulated_signals(params.SDR_ChannelCount, vector<dsp_t>(params.SDR_FrameSize / (params.Decimator1_Factor*params.Decimator2_Factor))),
@@ -30,15 +30,5 @@ namespace SdrBirdrec
 		vector < dsp_t > receive_frequencies;
 	};
 
-	struct OutputFrame
-	{
-	public:
-		std::vector<dsp_t> sdr_spectrum;
-		std::vector < dsp_t > signal_strengths;
-		std::vector < dsp_t > carrier_frequencies;
-		std::vector < dsp_t > receive_frequencies;
-		std::vector<dsp_t> output_signal;
-		std::string channel_type;
-		size_t channel_number;
-	};
+	
 }

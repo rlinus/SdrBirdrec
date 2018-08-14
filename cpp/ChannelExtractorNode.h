@@ -7,9 +7,9 @@
 
 #include "fftwcpp.h"
 #include "Types.h"
-#include "DataFrame.h"
+#include "SdrDataFrame.h"
 #include "InitParams.h"
-#include "DspUtils.h"
+#include "BiquadFilter.h"
 
 namespace SdrBirdrec
 {
@@ -21,7 +21,7 @@ namespace SdrBirdrec
 	* Reference for the overlap-save DDC method:
 	*	Mark Borgerding, 2006, Turning Overlap-Save into a Multiband Mixing, Downsampling Filter Bank
 	*/
-	class ChannelExtractorNode : public function_node<shared_ptr<DataFrame>, shared_ptr<DataFrame>>
+	class ChannelExtractorNode : public function_node<shared_ptr<SdrDataFrame>, shared_ptr<SdrDataFrame>>
 	{
 	private:
 		const InitParams params;
@@ -43,7 +43,7 @@ namespace SdrBirdrec
 		vector<fftwcpp::Fft<dsp_t, fftwcpp::forward>> fft2; //real to complex fft
 		vector<fftwcpp::Fft<dsp_t, fftwcpp::inverse>> ifft2;
 
-		vector<DspUtils::Filters::Biquad_IIR<dsp_t>> hp_filters;
+		vector<BiquadFilter<dsp_t>> hp_filters;
 
 		// state variables
 		vector<vector<dsp_t>> spectrums;
@@ -62,7 +62,7 @@ namespace SdrBirdrec
 			const dsp_t pi = dsp_t(3.1415926535897932385);
 		public:
 			f_body(ChannelExtractorNode &h) : h{ h } {}
-			shared_ptr<DataFrame> operator()(const shared_ptr<DataFrame> &frame)
+			shared_ptr<SdrDataFrame> operator()(const shared_ptr<SdrDataFrame> &frame)
 			{
 				tbb::parallel_for(size_t(0), h.W1, [&](size_t k)
 				{
@@ -200,7 +200,7 @@ namespace SdrBirdrec
 		};
 	public:
 		ChannelExtractorNode(graph &g, const InitParams &params) :
-			function_node<shared_ptr<DataFrame>, shared_ptr<DataFrame>>(g, serial, f_body(*this)),
+			function_node<shared_ptr<SdrDataFrame>, shared_ptr<SdrDataFrame>>(g, serial, f_body(*this)),
 			params{ params },
 			W1{ params.SDR_FrameSize / params.Decimator1_InputFrameSize },
 			W2{ params.SDR_IntermediateFrameSize / params.Decimator2_InputFrameSize },
@@ -216,7 +216,7 @@ namespace SdrBirdrec
 			ifft1(params.SDR_ChannelCount, fftwcpp::Fft<std::complex<dsp_t>, fftwcpp::inverse>(params.Decimator1_Nifft)),
 			fft2(params.SDR_ChannelCount, fftwcpp::Fft<dsp_t, fftwcpp::forward>(params.Decimator2_Nfft)),
 			ifft2(params.SDR_ChannelCount, fftwcpp::Fft<dsp_t, fftwcpp::inverse>(params.Decimator2_Nifft)),
-			hp_filters(params.SDR_ChannelCount, DspUtils::Filters::Biquad_IIR<dsp_t>(params.IirFilterCoeffs)),
+			hp_filters(params.SDR_ChannelCount, BiquadFilter<dsp_t>(params.IirFilterCoeffs)),
 			fm_demod_state(params.SDR_ChannelCount)
 		{
 #ifdef VERBOSE

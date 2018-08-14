@@ -15,6 +15,7 @@ namespace SdrBirdrec
 			double maxFreq;
 		};
 
+		Kwargs SDR_DeviceArgs;
 		double SDR_SampleRate = 1e6;
 		double SDR_CenterFrequency = 300e6;
 		bool SDR_AGC = false;
@@ -32,7 +33,8 @@ namespace SdrBirdrec
 
 		vector<dsp_t> Decimator1_FirFilterCoeffs = { 1.0 };
 		vector<dsp_t> Decimator2_FirFilterCoeffs = { 1.0 };
-		vector<vector<dsp_t>> IirFilterCoeffs = { { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 } };
+		//vector<vector<dsp_t>> IirFilterCoeffs = { { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 } };
+		vector<vector<dsp_t>> IirFilterCoeffs;
 		double SdrChannels_AudioGain = 1;
 
 		vector<ChannelBand> SDR_ChannelBands = {}; //list of carrier frequencies ranges (in range [-SDR_SampleRate,SDR_SampleRate)

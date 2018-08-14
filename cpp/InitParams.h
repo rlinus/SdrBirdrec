@@ -1,6 +1,9 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <iostream>
+#include <exception>
+#include <stdexcept>
 #include <sndfile.hh>
 #include "Types.h"
 #include "UserParams.h"

@@ -3,10 +3,10 @@
 %%
 clear h; clear SdrBirdrecRecorder; clear SdrBirdrecMex;
 
-list = SdrBirdrecRecorder.findSdrDevices();
-devNumber = 3;
+list = SdrBirdrecBackend.findSdrDevices();
+devNumber = 1;
 list{devNumber}
-h= SdrBirdrecRecorder(list{devNumber});
+h= SdrBirdrecBackend(list{devNumber});
 
 %% parameters
 fs_lf = 24000; %samplerate of output signal
