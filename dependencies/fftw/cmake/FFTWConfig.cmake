@@ -9,11 +9,11 @@
 #	FFTW_LIBRARIES - path to .lib files
 #	FFTW_SHARED_LIBRARIES - path to .dll files
 
-get_filename_component(FFTW_LIBRARY_DOUBLE ${CMAKE_CURRENT_LIST_DIR}/../lib/libfftw3-3.lib ABSOLUTE)
-get_filename_component(FFTW_LIBRARY_SINGLE ${CMAKE_CURRENT_LIST_DIR}/../lib/libfftw3f-3.lib ABSOLUTE)
+get_filename_component(FFTW_LIBRARY_DOUBLE ${CMAKE_CURRENT_LIST_DIR}/../lib/fftw3.lib ABSOLUTE)
+get_filename_component(FFTW_LIBRARY_SINGLE ${CMAKE_CURRENT_LIST_DIR}/../lib/fftw3f.lib ABSOLUTE)
 
-get_filename_component(FFTW_SHARED_LIBRARY_DOUBLE ${CMAKE_CURRENT_LIST_DIR}/../bin/libfftw3-3.dll ABSOLUTE)
-get_filename_component(FFTW_SHARED_LIBRARY_SINGLE ${CMAKE_CURRENT_LIST_DIR}/../bin/libfftw3f-3.dll ABSOLUTE)
+get_filename_component(FFTW_SHARED_LIBRARY_DOUBLE ${CMAKE_CURRENT_LIST_DIR}/../bin/fftw3.dll ABSOLUTE)
+get_filename_component(FFTW_SHARED_LIBRARY_SINGLE ${CMAKE_CURRENT_LIST_DIR}/../bin/fftw3f.dll ABSOLUTE)
 
 get_filename_component(FFTW_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/../include ABSOLUTE)
 set(FFTW_LIBRARIES ${FFTW_LIBRARY_DOUBLE} ${FFTW_LIBRARY_SINGLE})
