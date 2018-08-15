@@ -30,6 +30,10 @@ switch settings.sdr_sample_rate_index
         Decimator1_Factor = 30;
         trackingSampleRate = 20; %frames per second
         Decimator1FramesPerTrackingFrame = 100;
+    case 5 %9.6 MHz
+        Decimator1_Factor = 40;
+        trackingSampleRate = 20; %frames per second
+        Decimator1FramesPerTrackingFrame = 80;
     otherwise
         error('No profile for sdr_sample_rate_index=%i',settings.sdr_sample_rate_index);
 end
@@ -98,13 +102,16 @@ else
             ddc_filter = designfilt('lowpassfir', 'DesignMethod', 'ls', 'FilterOrder', 400, 'SampleRate', fs_hf, 'PassbandFrequency', bw_if/2, 'StopbandFrequency', fs_if/2);
         case 4 %7.2 MHz
             ddc_filter = designfilt('lowpassfir', 'DesignMethod', 'ls', 'FilterOrder', 450, 'SampleRate', fs_hf, 'PassbandFrequency', bw_if/2, 'StopbandFrequency', fs_if/2);
+        case 5 %9.6 MHz
+            ddc_filter = designfilt('lowpassfir', 'DesignMethod', 'ls', 'FilterOrder', 600, 'SampleRate', fs_hf, 'PassbandFrequency', bw_if/2, 'StopbandFrequency', fs_if/2);
         otherwise
             error('No profile for sdr_sample_rate_index=%i',settings.sdr_sample_rate_index);
     end
     lp_filter = designfilt('lowpassfir', 'DesignMethod', 'ls', 'FilterOrder', 250, 'SampleRate', fs_if, 'PassbandFrequency', bw_lf/2, 'StopbandFrequency', fs_lf/2);
-    %hp_filter = designfilt('highpassiir', 'SampleRate', fs_lf, 'StopbandFrequency', 15, 'PassbandFrequency', 50, 'StopbandAttenuation', 80, 'PassbandRipple', 0.5);
+    save(filterfile, 'ddc_filter', 'lp_filter');
     
-    save(filterfile, 'ddc_filter', 'lp_filter', 'hp_filter');
+    %hp_filter = designfilt('highpassiir', 'SampleRate', fs_lf, 'StopbandFrequency', 15, 'PassbandFrequency', 50, 'StopbandAttenuation', 80, 'PassbandRipple', 0.5);
+    %save(filterfile, 'ddc_filter', 'lp_filter', 'hp_filter');
 end
 
 %% set params

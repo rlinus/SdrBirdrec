@@ -66,7 +66,7 @@ handles.sdr_device_btn.UserData.sdr_args = [];
 handles.sdr_device_btn.UserData.sdrBirdrecBackend = SdrBirdrecBackend();
 handles.channellist_btn.UserData.channel_list = {};
 
-handles.sdr_samplerate_pm.String = {'2.4', '4.8', '6', '7.2'};
+handles.sdr_samplerate_pm.String = {'2.4', '4.8', '6', '7.2', '9.6'};
 handles.daqmx_terminalconfig_pm.String = {'DAQmx_Val_Cfg_Default', 'DAQmx_Val_RSE', 'DAQmx_Val_NRSE', 'DAQmx_Val_Diff', 'DAQmx_Val_PseudoDiff'};
 
 %restore gui state

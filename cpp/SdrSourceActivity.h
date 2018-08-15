@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -30,66 +31,15 @@ namespace SdrBirdrec
 	class SdrSourceActivity : public sender<shared_ptr<SdrDataFrame>>
 	{
 	private:
-		template <typename T> struct RingBuffer
-		{
-		private:
-			vector<T> data;
-
-			size_t size_;
-			atomic<size_t> count{ 0 };
-			size_t front_{ 0 };
-			size_t back_{ 0 };
-		public:
-			RingBuffer(size_t size, const T& element = T()) :
-				size_{ size },
-				data(size, element)
-			{}
-
-			T& back() { return data[back_]; };
-			T& front() { return data[front_]; };
-
-			void push_back()
-			{
-				back_ = back_ == size_ - 1 ? 0 : back_ + 1;
-				++count;
-			}
-
-			void pop_front()
-			{
-				front_ = front_ == size_ - 1 ? 0 : front_ + 1;
-				--count;
-			}
-
-			size_t read_available() { return count; }
-			size_t write_available() { return size_ - count; }
-			void flush() { front_ = 0; back_ = 0; count = 0; }
-		};
-
-		struct RingBufferElement
-		{
-			RingBufferElement(size_t n) :
-				buf(n)
-			{}
-
-			vector<complex<dsp_t>> buf;
-			int nread;
-			int flags;
-			long long timeNs;
-		};
-
 		SyncedLogger &logger;
 
 		size_t poolSize;
-		size_t ringBufferSize;
 		size_t streamMTUsize;
-
-		double actualSampleRate;
 
 		atomic<bool> isStreamActiveFlag = false;
 		atomic<bool> isStreamTerminatedFlag = true;
 		const InitParams params;
 		SoapyDevice sdr_device;
-		unique_ptr< RingBuffer<RingBufferElement> > ringBuffer;
 		ObjectPool< SdrDataFrame > bufferPool;
 		std::thread receiverThread;
 		std::thread serviceThread;
@@ -129,8 +79,7 @@ namespace SdrBirdrec
 			}
 
 			sdr_device.handle->setSampleRate(SOAPY_SDR_RX, 0, params.SDR_SampleRate);
-			if(abs(sdr_device.handle->getSampleRate(SOAPY_SDR_RX, 0) - params.SDR_SampleRate) > 1) throw invalid_argument("SdrSourceActivity: The requested sdr samplerate is not supported on this device");
-			//cout << "SR diff:" << sdr_device.handle->getSampleRate(SOAPY_SDR_RX, 0) - params.SDR_SampleRate << endl;
+			if(abs(sdr_device.handle->getSampleRate(SOAPY_SDR_RX, 0) - params.SDR_SampleRate)/params.SDR_SampleRate > 0.1e-6) throw invalid_argument("SdrSourceActivity: The requested sdr samplerate is not supported on this device"); //tolearate a samplerate mismatch of 0.1ppm
 
 			sdr_device.handle->setFrequency(SOAPY_SDR_RX, 0, params.SDR_CenterFrequency);
 			if(abs(sdr_device.handle->getFrequency(SOAPY_SDR_RX, 0) - params.SDR_CenterFrequency) > 100) throw invalid_argument("SdrSourceActivity: The requested sdr center frequency is not supported on this device");
@@ -171,12 +120,7 @@ namespace SdrBirdrec
 			}
 
 			sdr_device.setupRxStream(std::is_same<SdrBirdrec::dsp_t, double>::value ? std::string(SOAPY_SDR_CF64) : std::string(SOAPY_SDR_CF32));
-
 			streamMTUsize = sdr_device.getRxStreamMTU();
-
-			actualSampleRate = sdr_device.handle->getSampleRate(SOAPY_SDR_RX, 0);
-			ringBufferSize = size_t(3 * actualSampleRate / streamMTUsize);
-			ringBuffer = make_unique<RingBuffer<RingBufferElement>>(ringBufferSize, RingBufferElement(streamMTUsize));
 		}
 
 		~SdrSourceActivity()
@@ -210,7 +154,6 @@ namespace SdrBirdrec
 			if(isStreamActiveFlag) throw logic_error("SdrSourceActivity: Can't activate stream, because it is already active.");
 			if(!successor) throw logic_error("SdrSourceActivity: Can't activate stream, because no successor is registered.");
 			while(receiverThread.joinable()) this_thread::yield();
-			ringBuffer->flush();
 
 			//timing
 			int activateFlags = 0;
@@ -236,7 +179,6 @@ namespace SdrBirdrec
 			isStreamTerminatedFlag = false;
 			isStreamActiveFlag = true;
 			receiverThread = thread(&SdrSourceActivity::receiverThreadFunc, this);
-			serviceThread = thread(&SdrSourceActivity::serviceThreadFunc, this);
 		}
 
 		void deactivate()
@@ -248,7 +190,6 @@ namespace SdrBirdrec
 			//deactivate sdr stream
 			if(sdr_device.deactivateRxStream() != 0) throw runtime_error("A Problem occured. Sdr stream couldn't be deactivated.");
 
-			serviceThread.join();
 			isStreamTerminatedFlag = true;
 		}
 
@@ -262,52 +203,15 @@ namespace SdrBirdrec
 		}
 
 	private:
+
 		static void receiverThreadFunc(SdrSourceActivity* h)
 		{
 			try
 			{
-				if(!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL))
-				{
-					cout << "SdrSourceActivity: Couldn't set thread priority" << endl;
-				}
-
-				size_t ctr = 0;
-				const size_t streamMTUsize = h->streamMTUsize;
-				//const size_t activationTimeNs = h->activationTimeNs;
-
-
-				//sdr loop
-				while(h->isStreamActiveFlag)
-				{
-					if(!h->ringBuffer->write_available()) continue;
-
-					auto& ringBufferElement = h->ringBuffer->back();
-					void* buf_ptr = (void*)ringBufferElement.buf.data();
-					ringBufferElement.flags = 0;
-					ringBufferElement.nread = h->sdr_device.readStream(&buf_ptr, streamMTUsize, ringBufferElement.flags, ringBufferElement.timeNs, 600000000);
-					//ringBufferElement.timeNs -= activationTimeNs;
-					h->ringBuffer->push_back();
-
-					++ctr;
-				}
-
-			}
-			catch(exception e)
-			{
-				cout << "SdrSourceActivity: receiver thread exception: " << e.what() << endl;
-			}
-		}
-
-		static void serviceThreadFunc(SdrSourceActivity* h)
-		{
-			try
-			{
 				size_t output_frame_ctr = 0;
-				size_t input_frame_ctr = 0;
 				bool sdrBackPressureReportedFlag = false;
 
-				bool had_an_overflow = false;
-				long long lastTimeNS;
+				uint64_t nreadTotal = 0;
 
 				size_t outputBufferPos = 0;
 				const size_t outputBufferSize = h->params.SDR_FrameSize;
@@ -317,128 +221,54 @@ namespace SdrBirdrec
 
 				while(h->isStreamActiveFlag)
 				{
-					if(!h->ringBuffer->read_available())
-					{
-						this_thread::yield();
-						continue;
-					}
+					void* buf_ptr = (void*)(frame->sdr_signal.data()+outputBufferPos);
+					int flags = 0;
+					long long timeNs = 0;
+					//int nread = h->sdr_device.readStream(&buf_ptr, outputBufferSize - outputBufferPos, flags, timeNs, 10000000);
+					int nread = h->sdr_device.readStream(&buf_ptr, std::min(outputBufferSize - outputBufferPos, h->streamMTUsize), flags, timeNs, 10000000);
 
-					auto& ringBufferElement = h->ringBuffer->front();
-
-					if(ringBufferElement.nread == SOAPY_SDR_OVERFLOW)
+					if(nread == SOAPY_SDR_OVERFLOW)
 					{
-						if(!had_an_overflow)
-						{
-							had_an_overflow = true;
-							lastTimeNS = ringBufferElement.timeNs;
-						}
-						h->ringBuffer->pop_front();
-						++input_frame_ctr;
-						continue;
-					}
-					else if(ringBufferElement.nread < 0)
-					{
-						throw runtime_error("SdrSourceActivity: Sdr receive error.");
-					}
-
-					if(had_an_overflow)
-					{
-						had_an_overflow = false;
-						size_t numDroppedSamples = (size_t)SoapySDR::timeNsToTicks(ringBufferElement.timeNs - lastTimeNS, h->actualSampleRate);
-
 						stringstream strstream;
-						if(ringBufferElement.flags & SOAPY_SDR_HAS_TIME)
-						{
-							strstream << "SdrSourceActivity: dropped " << numDroppedSamples << " samples at time " << (ringBufferElement.timeNs - h->activationTimeNs) / 1e9 << "s." << endl;
-						}
-						else
-						{
-							strstream << "SdrSourceActivity: Sdr overflow." << endl;
-						}
+						strstream << "SdrSourceActivity: Sdr overflow (samples have been lost) at stream time " << nreadTotal/h->params.SDR_SampleRate << "s" << endl;
 						h->logger.write(strstream.str());
-
-						while(numDroppedSamples > 0)
-						{
-							if(numDroppedSamples < outputBufferSize - outputBufferPos)
-							{
-								fill_n(frame->sdr_signal.begin() + outputBufferPos, numDroppedSamples, complex<dsp_t>(0));
-								outputBufferPos += numDroppedSamples;
-								numDroppedSamples = 0;
-							}
-							else
-							{
-								fill_n(frame->sdr_signal.begin() + outputBufferPos, outputBufferSize - outputBufferPos, complex<dsp_t>(0));
-								numDroppedSamples -= outputBufferSize - outputBufferPos;
-								outputBufferPos = 0;
-
-								//get a new empty frame
-								if(!h->successor->try_put(frame)) throw runtime_error("SdrSourceActivity: successor did not accept item");
-								frame = h->bufferPool.acquire();
-								while(!frame)
-								{
-									if(!h->isStreamActiveFlag) return;
-									if(!sdrBackPressureReportedFlag)
-									{
-										stringstream strstream2;
-										strstream2 << "SdrSourceActivity: back pressure at frame " << output_frame_ctr << endl;
-										h->logger.write(strstream2.str());
-										sdrBackPressureReportedFlag = true;
-									}
-									this_thread::yield();
-									frame = h->bufferPool.acquire();
-								}
-								frame->index = ++output_frame_ctr;
-							}
-
-						}
 					}
+					else if(nread == SOAPY_SDR_TIMEOUT) throw runtime_error("SdrSourceActivity: SOAPY_SDR_TIMEOUT error.");
+					else if(nread < 0) throw runtime_error("SdrSourceActivity: readStream error.");
 
-					size_t inputBufferPos = 0;
-					const size_t inputBufferSize = ringBufferElement.nread;
+					if(nread < 0) nread = 0;
+					nreadTotal += nread;
+					outputBufferPos += nread;
 
-					while(inputBufferPos < inputBufferSize)
+					if(outputBufferPos == outputBufferSize)
 					{
-						if(inputBufferSize - inputBufferPos < outputBufferSize - outputBufferPos)
-						{
-							copy_n(ringBufferElement.buf.cbegin() + inputBufferPos, inputBufferSize - inputBufferPos, frame->sdr_signal.begin() + outputBufferPos);
-							outputBufferPos += inputBufferSize - inputBufferPos;
-							inputBufferPos = inputBufferSize;
-						}
-						else
-						{
-							copy_n(ringBufferElement.buf.cbegin() + inputBufferPos, outputBufferSize - outputBufferPos, frame->sdr_signal.begin() + outputBufferPos);
-							inputBufferPos += outputBufferSize - outputBufferPos;
-							outputBufferPos = 0;
+						outputBufferPos = 0;
 
-							//get a new empty frame
-							if(!h->successor->try_put(frame)) throw runtime_error("SdrSourceActivity: successor did not accept item");
-							frame = h->bufferPool.acquire();
-							while(!frame)
+						//get a new empty frame
+						if(!h->successor->try_put(frame)) throw runtime_error("SdrSourceActivity: successor did not accept item");
+						frame = h->bufferPool.acquire();
+						while(!frame)
+						{
+							if(!h->isStreamActiveFlag) return;
+							if(!sdrBackPressureReportedFlag)
 							{
-								if(!h->isStreamActiveFlag) return;
-								if(!sdrBackPressureReportedFlag)
-								{
-									stringstream strstream2;
-									strstream2 << "SdrSourceActivity: back pressure at frame " << output_frame_ctr << endl;
-									h->logger.write(strstream2.str());
-									sdrBackPressureReportedFlag = true;
-								}
-								this_thread::yield();
-								frame = h->bufferPool.acquire();
+								stringstream strstream2;
+								strstream2 << "SdrSourceActivity: back pressure at frame " << output_frame_ctr << endl;
+								h->logger.write(strstream2.str());
+								sdrBackPressureReportedFlag = true;
 							}
-							frame->index = ++output_frame_ctr;
+							this_thread::yield();
+							frame = h->bufferPool.acquire();
 						}
+						frame->index = ++output_frame_ctr;
 					}
-
-					h->ringBuffer->pop_front();
-					++input_frame_ctr;
 				}
 				frame = nullptr;
 			}
 			catch(exception e)
 			{
 				stringstream strstream;
-				strstream << "SdrSourceActivity: service thread exception: " << e.what() << endl;
+				strstream << "SdrSourceActivity: receiver thread exception: " << e.what() << endl;
 				h->logger.write(strstream.str());
 			}
 		}
