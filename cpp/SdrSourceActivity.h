@@ -35,6 +35,7 @@ namespace SdrBirdrec
 
 		size_t poolSize;
 		size_t streamMTUsize;
+		double actualSampleRate;
 
 		atomic<bool> isStreamActiveFlag = false;
 		atomic<bool> isStreamTerminatedFlag = true;
@@ -121,6 +122,7 @@ namespace SdrBirdrec
 
 			sdr_device.setupRxStream(std::is_same<SdrBirdrec::dsp_t, double>::value ? std::string(SOAPY_SDR_CF64) : std::string(SOAPY_SDR_CF32));
 			streamMTUsize = sdr_device.getRxStreamMTU();
+			actualSampleRate = sdr_device.handle->getSampleRate(SOAPY_SDR_RX, 0);
 		}
 
 		~SdrSourceActivity()
@@ -211,7 +213,8 @@ namespace SdrBirdrec
 				size_t output_frame_ctr = 0;
 				bool sdrBackPressureReportedFlag = false;
 
-				uint64_t nreadTotal = 0;
+				uint64_t sampleTickCtr = 0;
+				size_t numDroppedSamples;
 
 				size_t outputBufferPos = 0;
 				const size_t outputBufferSize = h->params.SDR_FrameSize;
@@ -221,24 +224,44 @@ namespace SdrBirdrec
 
 				while(h->isStreamActiveFlag)
 				{
-					void* buf_ptr = (void*)(frame->sdr_signal.data()+outputBufferPos);
-					int flags = 0;
-					long long timeNs = 0;
-					//int nread = h->sdr_device.readStream(&buf_ptr, outputBufferSize - outputBufferPos, flags, timeNs, 10000000);
-					int nread = h->sdr_device.readStream(&buf_ptr, std::min(outputBufferSize - outputBufferPos, h->streamMTUsize), flags, timeNs, 10000000);
-
-					if(nread == SOAPY_SDR_OVERFLOW)
+					
+					if(numDroppedSamples == 0)
 					{
-						stringstream strstream;
-						strstream << "SdrSourceActivity: Sdr overflow (samples have been lost) at stream time " << nreadTotal/h->params.SDR_SampleRate << "s" << endl;
-						h->logger.write(strstream.str());
-					}
-					else if(nread == SOAPY_SDR_TIMEOUT) throw runtime_error("SdrSourceActivity: SOAPY_SDR_TIMEOUT error.");
-					else if(nread < 0) throw runtime_error("SdrSourceActivity: readStream error.");
+						void* buf_ptr = (void*)(frame->sdr_signal.data() + outputBufferPos);
+						int flags = 0;
+						long long timeNs = 0;
 
-					if(nread < 0) nread = 0;
-					nreadTotal += nread;
-					outputBufferPos += nread;
+						int nread = h->sdr_device.readStream(&buf_ptr, std::min(outputBufferSize - outputBufferPos, h->streamMTUsize), flags, timeNs, 10000000);
+
+						if(nread == SOAPY_SDR_OVERFLOW)
+						{
+							flags = 0;
+							long long timeNs2 = 0;
+							int nread2 = h->sdr_device.readStream(&buf_ptr, 0, flags, timeNs2, 10000000);
+							if(nread2 < 0) throw runtime_error("SdrSourceActivity: readStream error.");
+							numDroppedSamples = (size_t)SoapySDR::timeNsToTicks(timeNs2 - timeNs, h->actualSampleRate);
+
+							stringstream strstream;
+							strstream << "SdrSourceActivity: SDR overflow (" << numDroppedSamples << " samples have been lost at stream time " << sampleTickCtr/h->params.SDR_SampleRate << "s)" << endl;
+							h->logger.write(strstream.str());
+
+							continue;
+						}
+						else if(nread == SOAPY_SDR_TIMEOUT) throw runtime_error("SdrSourceActivity: SOAPY_SDR_TIMEOUT error.");
+						else if(nread < 0) throw runtime_error("SdrSourceActivity: readStream error.");
+
+						sampleTickCtr += nread;
+						outputBufferPos += nread;
+					}
+					else
+					{
+						//if samples have been lost due to an overflow write a respective number of zeros in the output stream, so that everything stays in sync
+						size_t numZeros = std::min(outputBufferSize - outputBufferPos, numDroppedSamples);
+						std::fill_n(frame->sdr_signal.data() + outputBufferPos, numZeros, std::complex<dsp_t>(0.0));
+						numDroppedSamples -= numZeros;
+						sampleTickCtr += numZeros;
+						outputBufferPos += numZeros;
+					}
 
 					if(outputBufferPos == outputBufferSize)
 					{
