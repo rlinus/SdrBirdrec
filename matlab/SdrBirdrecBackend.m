@@ -21,7 +21,7 @@ classdef SdrBirdrecBackend < handle
             SdrBirdrecMex('delete', this.objectHandle);
         end
 
-        %% initStream
+        %% initRec
         % initializes a recording. Params must be a struct whith the
         % following fields:
         %   
@@ -134,21 +134,21 @@ classdef SdrBirdrecBackend < handle
         % LogFilename:
         %   The name of the text file that logs buffer overflows. 
         
-        function initStream(this, params)
-            SdrBirdrecMex('initStream', this.objectHandle, params);
+        function initRec(this, params)
+            SdrBirdrecMex('initRec', this.objectHandle, params);
         end
         
-        %% startStream
+        %% startRec
         % starts a new recording. Must be preceeded by a call to
         % initStream(params).
-        function startStream(this)
-            SdrBirdrecMex('startStream', this.objectHandle);
+        function startRec(this)
+            SdrBirdrecMex('startRec', this.objectHandle);
         end
         
-        %% Stop data Stream
+        %% stopRec
         % stops the recording
-        function stopStream(this)
-            SdrBirdrecMex('stopStream', this.objectHandle);
+        function stopRec(this)
+            SdrBirdrecMex('stopRec', this.objectHandle);
         end
         
         %% getMonitorDataFrame
@@ -172,10 +172,10 @@ classdef SdrBirdrecBackend < handle
             x = SdrBirdrecMex('getMonitorDataFrame', this.objectHandle);
         end
         
-        %% isStreaming
+        %% isRecording
         % returns if a recording is started
         function x = isStreaming(this)
-            x = SdrBirdrecMex('isStreaming', this.objectHandle);
+            x = SdrBirdrecMex('isRecording', this.objectHandle);
         end
         
         %% setSquelch

@@ -1,17 +1,17 @@
 function recorder(sdrBirdrecBackend, settings, gui_handles)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+%recorder this function sets the init params for the sdrBirdrecBackend
+%object and then starts the recording.
 
 %% variables
-sdrSpectrumPlotRate = 5; %how often to plot per second
-spectrogramPlotRate = 1;
+sdrSpectrumPlotRate = 5; %how often to plot the sdr spectrum per second
+spectrogramPlotRate = 1; %how often to plot the spectrogram per second
 
-fs_lf = 24000; %samplerate of output signal
-bw_lf = 20000; %two sideded bandwith of output signal
-bw_if = 200e3; %filter bandwith for decimater
+fs_lf = 24000; %samplerate of the demodulated sdr channels
+bw_lf = 20000; %two sideded bandwidth of the demodulated sdr channels (filter parameter)
+
 Decimator2_Factor = 10;
-
 fs_if= fs_lf*Decimator2_Factor; %samplerate after first decimation
+bw_if = 200e3; %bandwidth after first decimation (filter parameter)
 
 switch settings.sdr_sample_rate_index
     case 1 %2.4 MHz
@@ -41,8 +41,6 @@ end
 fs_hf = fs_if*Decimator1_Factor; %sdr samplerate
 
 
-udp_start_msg = 'sdrbirdrec::start';
-udp_stop_msg = 'sdrbirdrec::stop';
 %% filenames
 params.LogFilename = [settings.outputfolder '\' settings.fn '_log.txt'];
 SdrChannelListFilename = [settings.outputfolder '\' settings.fn '_SdrChannelList.csv'];
@@ -61,6 +59,9 @@ else
     params.DAQmxChannelsFilename = [settings.outputfolder '\' settings.fn '_DAQmxChannels.*.w64'];
 end
 
+%% udp trigger messages
+udp_start_msg = ['sdrbirdrec::start::' params.SdrChannelsFilename];
+udp_stop_msg = 'sdrbirdrec::stop';
 
 %% Check for existing files
 if ~isempty(dir(params.SdrChannelsFilename)) || ... 
@@ -226,7 +227,7 @@ while is_recording
     end
     
     % init stream
-    sdrBirdrecBackend.initStream(params);
+    sdrBirdrecBackend.initRec(params);
     hbuff.reset();
     
     sdrBirdrecBackend.setSquelch(monitor_settings.squelch_level);
@@ -242,7 +243,7 @@ while is_recording
 
     try
         i_frame = int64(0);
-        sdrBirdrecBackend.startStream();
+        sdrBirdrecBackend.startRec();
         while is_recording && (~settings.split_files || i_frame < sdrSpectrumPlotRate * settings.file_duration * 60)
 
             frame = sdrBirdrecBackend.getMonitorDataFrame();
@@ -287,7 +288,7 @@ while is_recording
         ME.rethrow;
     end
 
-    sdrBirdrecBackend.stopStream();
+    sdrBirdrecBackend.stopRec();
     
     if settings.udp; fprintf(udph, udp_stop_msg); end % send udp stop trigger 
     

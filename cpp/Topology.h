@@ -15,77 +15,29 @@
 
 namespace SdrBirdrec
 {
-	using namespace tbb::flow;
-	using namespace std;
-
 	class Topology
 	{
 	public:
-		Topology(const InitParams &params) :
-			params{ params },
-			isStreamActiveFlag{ false },
-			logger{ params.LogFilename }
-		{
-#ifdef VERBOSE
-			std::cout << "Topology()" << endl;
-#endif
+		Topology(const InitParams &params);
 
-			make_edges();
-		}
+		~Topology();
 
-		~Topology()
-		{
-			try
-			{
-				if(isStreamActiveFlag)
-				{
-					sdrSourceActivity.deactivate();
-					nIDAQmxSourceActivitiy.deactivate();
-				}
-				g.wait_for_all();	
-			}
-			catch (...)
-			{
-				cout << "Topology destructor: catched exception." << endl;
-			}
-		}
+		void activate();
 
-		void activate() 
-		{ 
-			if(isStreamActiveFlag) throw logic_error("Topology: Can't activate stream, because it's already active.");
-
-			sdrSourceActivity.activate();
-			nIDAQmxSourceActivitiy.activate();
-			isStreamActiveFlag = true;
-		}
-
-		shared_ptr<MonitorDataFrame> getMonitorDataFrame(void)
-		{
-			shared_ptr<MonitorDataFrame> frame{ nullptr };
-			outOverwriteNode.try_get(frame);
-			while (frame == lastOutputFrame)
-			{
-				this_thread::yield();
-				outOverwriteNode.try_get(frame);
-			}
-
-			lastOutputFrame = frame;
-			return frame;
-		}
+		shared_ptr<MonitorDataFrame> getMonitorDataFrame(void);
 
 		bool isRefPLLlocked(void) { return sdrSourceActivity.isRefPLLlocked(); }
 
 		void setMonitorOptions(const Kwargs &args) { controlNode.monitorSettingsInputPort.try_put(args); }
-		bool isStreamActive() { return isStreamActiveFlag; }
+		bool isStreamActive() const { return isStreamActiveFlag; }
 
 	private:
-		atomic<bool> isStreamActiveFlag;
+		std::atomic<bool> isStreamActiveFlag;
 
-		//SoapyDevice sdr_device;
 		const InitParams params;
 		SyncedLogger logger;
 		shared_ptr<MonitorDataFrame> lastOutputFrame = nullptr;
-		graph g;
+		tbb::flow::graph g;
 
 		NIDAQmxSourceActivitiy nIDAQmxSourceActivitiy{ params, logger };
 		SdrSourceActivity sdrSourceActivity{ params, logger };	
@@ -93,17 +45,8 @@ namespace SdrBirdrec
 
 		ChannelExtractorNode channelExtractorNode{ g, params };
 		ControlNode controlNode{ g, params, audioOutputActivitiy };
-		function_node< typename FileWriterNodeBody::input_type > fileWriterNode{ g, serial,  FileWriterNodeBody(params) };
-		overwrite_node< shared_ptr<MonitorDataFrame> > outOverwriteNode{ g };
-
-		void make_edges()
-		{
-			make_edge(sdrSourceActivity, channelExtractorNode);
-			make_edge(channelExtractorNode, controlNode.sdrFrameInputPort);
-			make_edge(nIDAQmxSourceActivitiy, controlNode.daqmxFrameInputPort);
-			make_edge(controlNode.fileWriterOutputPort, fileWriterNode);
-			make_edge(controlNode.outputFrameOutputPort, outOverwriteNode);
-		}
+		tbb::flow::function_node< typename FileWriterNodeBody::input_type > fileWriterNode{ g, serial,  FileWriterNodeBody(params) };
+		tbb::flow::overwrite_node< std::shared_ptr<MonitorDataFrame> > outOverwriteNode{ g };
 	};
 
 }

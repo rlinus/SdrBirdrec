@@ -24,24 +24,35 @@ namespace SdrBirdrec
 	private:
 		const InitParams params;
 
-		SndfileHandle SdrChannelsH;
-		SndfileHandle SdrSignalStrengthH;
-		SndfileHandle SdrCarrierFreqH;
-		SndfileHandle SdrReceiveFreqH;
-		SndfileHandle DAQmxChannelsH;
+		shared_ptr<SndfileHandle> SdrChannelsH;
+		shared_ptr<SndfileHandle> SdrSignalStrengthH;
+		shared_ptr<SndfileHandle> SdrCarrierFreqH;
+		shared_ptr<SndfileHandle> SdrReceiveFreqH;
+		shared_ptr<SndfileHandle> DAQmxChannelsH;
 
 		bool firstFrame = true;
 		size_t filterDelay;
 	public:
 		FileWriterNodeBody(const InitParams &params) :
 			params{ params },
-			SdrChannelsH{ params.SdrChannelsFilename, SFM_WRITE, SF_FORMAT_W64 | params.DataFile_SamplePrecision_Map.at(params.DataFile_SamplePrecision), params.SDR_ChannelCount, params.SDR_ChannelSampleRate },
-			SdrSignalStrengthH{ params.SdrSignalStrengthFilename, SFM_WRITE, SF_FORMAT_W64 | SF_FORMAT_FLOAT, params.SDR_ChannelCount, params.SDR_TrackingRate },
-			SdrCarrierFreqH{ params.SdrCarrierFreqFilename, SFM_WRITE, SF_FORMAT_W64 | SF_FORMAT_FLOAT, params.SDR_ChannelCount, params.SDR_TrackingRate },
-			SdrReceiveFreqH{ params.SdrReceiveFreqFilename, SFM_WRITE, SF_FORMAT_W64 | SF_FORMAT_FLOAT, params.SDR_ChannelCount, params.SDR_TrackingRate },
-			DAQmxChannelsH{ params.DAQmxChannelsFilename, SFM_WRITE, SF_FORMAT_W64 | params.DataFile_SamplePrecision_Map.at(params.DataFile_SamplePrecision), params.DAQmx_ChannelCount, params.DAQmx_SampleRate },
 			filterDelay{ (size_t)round(params.Decimator1_FilterOrder / (2.0* params.Decimator1_Factor*params.Decimator2_Factor) + params.Decimator2_FilterOrder / (2.0 * params.Decimator2_Factor)) }
-		{}
+		{
+			//if filenames are empty or zero channels are requested don't create the files
+			if(!params.SdrChannelsFilename.empty() && params.SDR_ChannelCount != 0)
+				SdrChannelsH = make_shared<SndfileHandle>(params.SdrChannelsFilename, SFM_WRITE, SF_FORMAT_W64 | params.DataFile_SamplePrecision_Map.at(params.DataFile_SamplePrecision), params.SDR_ChannelCount, params.SDR_ChannelSampleRate);
+
+			if(!params.SdrSignalStrengthFilename.empty() && params.SDR_ChannelCount != 0)
+				SdrSignalStrengthH = make_shared<SndfileHandle>(params.SdrSignalStrengthFilename, SFM_WRITE, SF_FORMAT_W64 | SF_FORMAT_FLOAT, params.SDR_ChannelCount, params.SDR_TrackingRate);
+
+			if(!params.SdrCarrierFreqFilename.empty() && params.SDR_ChannelCount != 0)
+				SdrCarrierFreqH = make_shared<SndfileHandle>(params.SdrCarrierFreqFilename, SFM_WRITE, SF_FORMAT_W64 | SF_FORMAT_FLOAT, params.SDR_ChannelCount, params.SDR_TrackingRate);
+
+			if(!params.SdrReceiveFreqFilename.empty() && params.SDR_ChannelCount != 0)
+				SdrReceiveFreqH = make_shared<SndfileHandle>(params.SdrReceiveFreqFilename, SFM_WRITE, SF_FORMAT_W64 | SF_FORMAT_FLOAT, params.SDR_ChannelCount, params.SDR_TrackingRate);
+
+			if(!params.DAQmxChannelsFilename.empty() && params.DAQmx_ChannelCount != 0)
+				DAQmxChannelsH = make_shared<SndfileHandle>(params.DAQmxChannelsFilename, SFM_WRITE, SF_FORMAT_W64 | params.DataFile_SamplePrecision_Map.at(params.DataFile_SamplePrecision), params.DAQmx_ChannelCount, params.DAQmx_SampleRate);
+		}
 
 		using input_type = tuple<shared_ptr<SdrDataFrame>, shared_ptr<vector<dsp_t>>>;
 
@@ -67,20 +78,20 @@ namespace SdrBirdrec
 				if(firstFrame)
 				{
 					//compensate for group delay of decimation filters
-					SdrChannelsH.write(SdrChannelsBuffer.data() + filterDelay * params.SDR_ChannelCount, SdrChannelsBuffer.size() - filterDelay * params.SDR_ChannelCount);
+					if(SdrChannelsH) SdrChannelsH->write(SdrChannelsBuffer.data() + filterDelay * params.SDR_ChannelCount, SdrChannelsBuffer.size() - filterDelay * params.SDR_ChannelCount);
 					firstFrame = false;
 				}
 				else
 				{
-					SdrChannelsH.write(SdrChannelsBuffer.data(), SdrChannelsBuffer.size());
+					if(SdrChannelsH) SdrChannelsH->write(SdrChannelsBuffer.data(), SdrChannelsBuffer.size());
 				}
 
 				//write the rest
-				SdrSignalStrengthH.write(frame->signal_strengths.data(), frame->signal_strengths.size());
-				SdrCarrierFreqH.write(frame->carrier_frequencies.data(), frame->carrier_frequencies.size());
-				SdrReceiveFreqH.write(frame->receive_frequencies.data(), frame->receive_frequencies.size());
+				if(SdrSignalStrengthH) SdrSignalStrengthH->write(frame->signal_strengths.data(), frame->signal_strengths.size());
+				if(SdrCarrierFreqH) SdrCarrierFreqH->write(frame->carrier_frequencies.data(), frame->carrier_frequencies.size());
+				if(SdrReceiveFreqH) SdrReceiveFreqH->write(frame->receive_frequencies.data(), frame->receive_frequencies.size());
 			}
-			DAQmxChannelsH.write(daqmxFrame->data(), daqmxFrame->size());
+			if(DAQmxChannelsH) DAQmxChannelsH->write(daqmxFrame->data(), daqmxFrame->size());
 
 			return continue_msg();
 		}

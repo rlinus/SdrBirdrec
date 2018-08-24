@@ -419,7 +419,7 @@ function play_btn_Callback(hObject, eventdata, handles)
 global monitor_settings;
 monitor_settings.play_audio = true;
 h = handles.sdr_device_btn.UserData.sdrBirdrecBackend;
-if ~isempty(h) && h.isStreaming()
+if ~isempty(h) && h.isRecording()
     h.setPlayAudio(true);
 end
 
@@ -431,7 +431,7 @@ function stop_btn_Callback(hObject, eventdata, handles)
 global monitor_settings;
 monitor_settings.play_audio = false;
 h = handles.sdr_device_btn.UserData.sdrBirdrecBackend;
-if ~isempty(h) && h.isStreaming()
+if ~isempty(h) && h.isRecording()
     h.setPlayAudio(false);
 end
 
@@ -552,7 +552,7 @@ function squelchlevel_e_Callback(hObject, eventdata, handles)
 global monitor_settings;
 monitor_settings.squelch_level = str2double(handles.squelchlevel_e.String);
 h = handles.sdr_device_btn.UserData.sdrBirdrecBackend;
-if ~isempty(h) && h.isStreaming()
+if ~isempty(h) && h.isRecording()
     h.setSquelch(str2double(handles.squelchlevel_e.String));
 end
 
@@ -784,7 +784,7 @@ function channels_btn_group_SelectionChangedFcn(hObject, eventdata, handles)
 global monitor_settings
 
 h = handles.sdr_device_btn.UserData.sdrBirdrecBackend;
-if ~isempty(h) && h.isStreaming()
+if ~isempty(h) && h.isRecording()
     if strfind(handles.channels_btn_group.SelectedObject.Tag, 'pb')
         monitor_settings.channel_type = 'sdr';
     elseif strfind(handles.channels_btn_group.SelectedObject.Tag, 'daqmx')

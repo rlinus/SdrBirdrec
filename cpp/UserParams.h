@@ -33,11 +33,10 @@ namespace SdrBirdrec
 
 		vector<dsp_t> Decimator1_FirFilterCoeffs = { 1.0 };
 		vector<dsp_t> Decimator2_FirFilterCoeffs = { 1.0 };
-		//vector<vector<dsp_t>> IirFilterCoeffs = { { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 } };
 		vector<vector<dsp_t>> IirFilterCoeffs;
 		double SdrChannels_AudioGain = 1;
 
-		vector<ChannelBand> SDR_ChannelBands = {}; //list of carrier frequencies ranges (in range [-SDR_SampleRate,SDR_SampleRate)
+		vector<ChannelBand> SDR_ChannelBands = {}; //!< list of carrier frequencies ranges (all bands must be in the range [-SDR_SampleRate,SDR_SampleRate))
 
 		size_t DAQmx_ChannelCount = 0;
 		string DAQmx_AIChannelList = ""s;
@@ -45,26 +44,21 @@ namespace SdrBirdrec
 		string DAQmx_ClockInputTerminal = ""s;
 		bool DAQmx_ExternalClock = false;
 		string DAQmx_AITerminalConfig = "DAQmx_Val_Cfg_Default"s;
-		double DAQmx_SampleRate = 24000;
+		double DAQmx_SampleRate = 32000;
 		double DAQmx_MaxVoltage = 10.0;
 		bool DAQmx_AILowpassEnable = false;
 		double DAQmx_AILowpassCutoffFreq = 12000.0;
 
-		size_t AudioInput_SampleRate = 24000;
-		size_t AudioInput_ChannelCount = 0;
-		int AudioInput_DeviceIndex = -1;
-
 		int AudioOutput_DeviceIndex = -1;
 
+		string DataFile_SamplePrecision = "float32";
 
-		string DataFile_SamplePrecision = "int16";
-
-		string SdrChannelsFilename = "SdrChannels.w64"s;
-		string SdrSignalStrengthFilename = "SdrSignalStrength.w64"s;
-		string SdrCarrierFreqFilename = "SdrCarrierFreq.w64"s;
-		string SdrReceiveFreqFilename = "SdrReceiveFreq.w64"s;
-		string DAQmxChannelsFilename = "DAQmxChannels.w64"s;
-		string AudioChannelsFilename = "AudioChannels.w64"s;
+		string SdrChannelsFilename;
+		string SdrSignalStrengthFilename;
+		string SdrCarrierFreqFilename;
+		string SdrReceiveFreqFilename;
+		string DAQmxChannelsFilename;
+		string AudioChannelsFilename;
 		string LogFilename = "Log.txt";
 	};
 }

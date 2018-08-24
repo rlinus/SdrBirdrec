@@ -16,40 +16,69 @@ namespace SdrBirdrec
 {
 	using namespace std;
 
+	/*!
+	* An object of this class represents a recording. It provides methods to start and control the recording.
+	* Additionally, it provides static mehtods for device discovery. 
+	*/
 	class SdrBirdrecBackend
 	{
 	public:
-		//SdrBirdrecBackend()
-		//{
-		//	//sdr_device.setupRxStream(std::is_same<SdrBirdrec::dsp_t, double>::value ? std::string(SOAPY_SDR_CF64) : std::string(SOAPY_SDR_CF32));
-		//}
-
+		/*!
+		* Enumerate a list of available SDR devices on the system.
+		* \param args device construction key/value argument filters
+		* \return a list of argument maps, each unique to a device
+		*/
 		static std::vector<Kwargs> findSdrDevices(const Kwargs & args = Kwargs());
+
+		/*!
+		* Enumerate a list of available audio input devices on the system.
+		* \return a list of argument maps, each unique to a device
+		*/
 		static std::vector<Kwargs> findAudioInputDevices();
+
+		/*!
+		* Enumerate a list of available audio output devices on the system.
+		* \return a list of argument maps, each unique to a device
+		*/
 		static std::vector<Kwargs> findAudioOutputDevices();
+
+		/*!
+		* Enumerate a list of available NIDAQmx devices on the system.
+		* \return a list of argument maps, each unique to a device
+		*/
 		static std::vector<Kwargs> findNIDAQmxDevices();
 
-
-		void initStream(const InitParams &params)
+		/*!
+		* Initializes a recording.
+		* \param params an InitParams object, which contains all the parameters needed to set up the recording
+		*/
+		void initRec(const InitParams &params)
 		{
-#ifdef VERBOSE
-			std::cout << "SdrBirdrecBackend::initStream()" << endl;
-#endif
-			if(topology && topology->isStreamActive()) throw runtime_error("SdrBirdrec: Stream is active. Call stopStream before reinitalisation.");
+			#ifdef VERBOSE
+			std::cout << "SdrBirdrecBackend::initRec()" << endl;
+			#endif
+
+			if(topology && topology->isStreamActive()) throw runtime_error("SdrBirdrec: A recording is ongoing. Call stopRec() before reinitalisation.");
 			topology = std::make_unique<Topology>(params);
 		}
 
-		void startStream()
+		/*!
+		* Starts a recording
+		*/
+		void startRec()
 		{ 
-			if(!topology) throw runtime_error("SdrBirdrec: Stream is not initalized.");
-			if(topology->isStreamActive()) throw runtime_error("SdrBirdrec: Stream is already active.");
-#ifdef VERBOSE
-			std::cout << "SdrBirdrecBackend::startStream()" << endl;
-#endif
+			if(!topology) throw runtime_error("SdrBirdrec: Recording is not yet initalized.");
+			if(topology->isStreamActive()) throw runtime_error("SdrBirdrec: Recording is already started.");
+			#ifdef VERBOSE
+			std::cout << "SdrBirdrecBackend::startRec()" << endl;
+			#endif
 			topology->activate(); 
 		}
 
-		void stopStream()
+		/*!
+		* Stops a recording
+		*/
+		void stopRec()
 		{
 			if(!topology) throw runtime_error("Stream is not running");
 			topology = nullptr;
@@ -96,7 +125,7 @@ namespace SdrBirdrec
 			topology->setMonitorOptions(args);
 		}
 
-		bool isStreaming() { return topology && topology->isStreamActive(); };
+		bool isRecording() { return topology && topology->isStreamActive(); };
 
 		std::vector<std::complex<dsp_t>> test(const Kwargs &args = Kwargs())
 		{

@@ -49,9 +49,10 @@ namespace SdrBirdrec
 			params{ params },
 			logger{ logger }
 		{
-#ifdef VERBOSE
+			#ifdef VERBOSE
 			std::cout << "NIDAQmxSourceActivitiy()" << endl;
-#endif
+			#endif
+
 			if(params.DAQmx_ChannelCount > 0)
 			{
 				if(params.DAQmx_MaxVoltage <= 0) throw invalid_argument("NIDAQmxSourceActivitiy: DAQmx_MaxVoltage must be a positive value");
@@ -241,7 +242,7 @@ namespace SdrBirdrec
 			if(read != h->params.DAQmx_FrameSize)
 			{
 				stringstream strstream;
-				strstream << "NIDAQmxSourceActivitiy: read only " << read << " samples, instead of " << nSamples << endl;
+				strstream << "NIDAQmxSourceActivitiy: read only " << read << " samples instead of " << nSamples << endl;
 				h->logger.write(strstream.str());
 			}
 

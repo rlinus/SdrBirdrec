@@ -2,7 +2,7 @@
 This file provides methods to wrap a C++ class in a MATLAB class, via a mex interface, safely, without memory leaks, whilst achieving 
 an interface in MATLAB that is similar to the underlying C++ interface. 
 
-Ref: https://ch.mathworks.com/matlabcentral/fileexchange/38964-example-matlab-class-wrapper-for-a-c-class?s_tid=FX_rc2_behav
+Source: https://ch.mathworks.com/matlabcentral/fileexchange/38964-example-matlab-class-wrapper-for-a-c-class?s_tid=FX_rc2_behav
 */
 #pragma once
 

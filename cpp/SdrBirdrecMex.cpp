@@ -1,31 +1,12 @@
+/*! \file SdrBirdrecMex.cpp */
 #include <tbb/tbbmalloc_proxy.h>
 
-//#include <cstdint>
 #include <string>
-//#include <cstring>
-//#include <typeinfo>
-//#include <type_traits>
-//#include <unordered_map>
 #include <iostream>
-//#include <fstream>
-//#include <sstream>
-//#include <complex>
-//#include <thread>
-//#include <mutex>
-//#include <memory>
-//#include <atomic>
 #include <vector>
-//#include <map>
 #include <exception>
-//#include <stdexcept>
-//#include <numeric>
-//#include <utility>
-//#include <algorithm>
-
-//#include "stdafx.h"
 #include "class_handle.h"
 #include "mexUtils.h"
-
 #include "Types.h"
 #include "SdrBirdrecEnvironment.h"
 #include "SdrBirdrecBackend.h"
@@ -35,10 +16,12 @@
 namespace SdrBirdrec
 {
 	mexUtils::redirectOstream2mexPrintf redirect;
-	const char mexFileName[] = "SdrBirdrecMex";
 	SdrBirdrecEnvironment environment;
 }
 
+/*!
+* \brief Mex wrapper for the SdrBirdrecBackend class
+*/
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 	using namespace mexUtils;
@@ -101,7 +84,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			return;
 		}
 
-		// Check there is a second input, which should be the class instance handle
+		// Check if there is a second input, which should be the class instance handle
 		if (nrhs < 2)
 			throw std::invalid_argument("Second input must be a class instance handle for a non-static method");
 
@@ -115,11 +98,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		// Get the class instance pointer from the second input
 		SdrBirdrecBackend *sdrBirdrecBackend = convertMat2Ptr<SdrBirdrecBackend>(prhs[1]);
 
-		if (!strcmp("initStream", cmd)) {
+		if (!strcmp("initRec", cmd)) {
 			if (nlhs < 0 || nrhs < 3) throw std::invalid_argument("Unexpected arguments.");
 			const mxArray *mxParams = prhs[2];
 			if(!mxIsStruct(mxParams)) throw std::invalid_argument("params must be a struct.");
 
+			//populate UserParams object with fields of input struct
 			UserParams params;
 			mxArray * fieldptr;
 
@@ -149,15 +133,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 			fieldptr = mxGetField(mxParams, 0, "LogFilename");
 			if(fieldptr) params.LogFilename = Cast::fromMxArray<std::string>(fieldptr);
-
-			fieldptr = mxGetField(mxParams, 0, "AudioInput_SampleRate");
-			if(fieldptr) params.AudioInput_SampleRate = Cast::fromMxArray<size_t>(fieldptr);
-
-			fieldptr = mxGetField(mxParams, 0, "AudioInput_ChannelCount");
-			if(fieldptr) params.AudioInput_ChannelCount = Cast::fromMxArray<size_t>(fieldptr);
-
-			fieldptr = mxGetField(mxParams, 0, "AudioInput_DeviceIndex");
-			if(fieldptr) params.AudioInput_DeviceIndex = Cast::fromMxArray<int>(fieldptr);
 
 			fieldptr = mxGetField(mxParams, 0, "AudioOutput_DeviceIndex");
 			if(fieldptr) params.AudioOutput_DeviceIndex = Cast::fromMxArray<int>(fieldptr);
@@ -281,19 +256,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			fieldptr = mxGetField(mxParams, 0, "DAQmx_AILowpassCutoffFreq");
 			if(fieldptr) params.DAQmx_AILowpassCutoffFreq = Cast::fromMxArray<double>(fieldptr);
 
-			sdrBirdrecBackend->initStream(params);
+			sdrBirdrecBackend->initRec(params);
 			return;
 		}
 
-		if(!strcmp("startStream", cmd)) {
+		if(!strcmp("startRec", cmd)) {
 			if(nlhs < 0 || nrhs < 2) throw std::exception("Unexpected arguments.");
-			sdrBirdrecBackend->startStream();
+			sdrBirdrecBackend->startRec();
 			return;
 		}
 
-		if (!strcmp("stopStream", cmd)) {
+		if (!strcmp("stopRec", cmd)) {
 			if (nlhs < 0 || nrhs < 2) throw std::exception("Unexpected arguments.");
-			sdrBirdrecBackend->stopStream();
+			sdrBirdrecBackend->stopRec();
 			return;
 		}
 
@@ -314,9 +289,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			return;
 		}
 
-		if (!strcmp("isStreaming", cmd)) {
+		if (!strcmp("isRecording", cmd)) {
 			if (nlhs < 0 || nrhs < 2) throw std::invalid_argument("Unexpected arguments.");
-			plhs[0] = Cast::toMxArray(sdrBirdrecBackend->isStreaming());
+			plhs[0] = Cast::toMxArray(sdrBirdrecBackend->isRecording());
 			return;
 		}
 
@@ -368,7 +343,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	catch (std::exception& e)
 	{
 		std::stringstream error_id, error_txt;
-		error_id << mexFileName << ":" << cmd;
+		error_id << "SdrBirdrecMex: " << cmd;
 		error_txt << cmd << ": " << e.what();
 		mexErrMsgIdAndTxt(error_id.str().c_str(), error_txt.str().c_str());
 	}

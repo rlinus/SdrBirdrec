@@ -17,7 +17,7 @@ set(NIDAQmx_ExternalCompilerSupport_DIR "C:/Program Files (x86)/National Instrum
 add_subdirectory ("cpp")
 
 # install additional files
-install(DIRECTORY matlab/ DESTINATION .)
+install(FILES matlab/sdr_birdrec.fig matlab/sdr_birdrec.m matlab/SdrBirdrecBackend.m matlab/getChannels.m matlab/getSdrDevice.m matlab/recorder.m DESTINATION .)
 install(FILES misc/SetUHD_IMAGES_DIR.ps1 misc/install.txt DESTINATION .)
 
 # config cpack

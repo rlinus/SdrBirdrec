@@ -219,9 +219,9 @@ namespace SdrBirdrec
 			hp_filters(params.SDR_ChannelCount, BiquadFilter<dsp_t>(params.IirFilterCoeffs)),
 			fm_demod_state(params.SDR_ChannelCount)
 		{
-#ifdef VERBOSE
+			#ifdef VERBOSE
 			std::cout << "ChannelExtractorNode()" << endl;
-#endif
+			#endif
 			//get H1
 			for(int j = 0; j < params.Decimator1_FirFilterCoeffs.size(); ++j) fft1[0].inBufr[j] = complex<dsp_t>(params.Decimator1_FirFilterCoeffs[j]);
 			fill(fft1[0].inBufr + params.Decimator1_FirFilterCoeffs.size(), fft1[0].inBufr + params.Decimator1_Nfft, complex<dsp_t>(0.0)); //zero pad h
