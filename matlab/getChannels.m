@@ -39,14 +39,6 @@ nrch_e =    uicontrol('Style','edit',...
                       'Enable', enable, ...
                       'Callback', @nrch_callback);
                   
-% uicontrol('Style','text',...
-%           'Position',[50 500 200 20],...
-%           'String','Automatic Frequency Control (AFC):');
-%                   
-% afc_cb =   uicontrol('Style','checkbox',...
-%                      'Position',[400 500 200 20],...
-%                      'Value',AFC);
-                  
 t = uitable('Position',[20 50 441 200],...
             'RowName', [], ...
             'ColumnName', {'channel nr.','bird name','min. freq. [MHz]','max. freq. [MHz]'},...
@@ -92,16 +84,19 @@ end
 function check_table(hObject,callbackdata,table)
     v = cell2mat(table(:,3:4));
     
-    if any(v(:,1)>v(:,2))
-        errordlg('The min. frequencies must be smaller or equal the max. frequencies!');
-        return;
-    end
+    if ~isempty(v) 
     
-    v = sortrows(v)';
-    
-    if ~issorted(v(:))
-        errordlg('The channels are not allowed to overlap!');
-        return;
+        if any(v(:,1)>v(:,2))
+            errordlg('The min. frequencies must be smaller or equal the max. frequencies!');
+            return;
+        end
+
+        v = sortrows(v)';
+
+        if ~issorted(v(:))
+            errordlg('The channels are not allowed to overlap!');
+            return;
+        end
     end
     
     uiresume(hObject.Parent);

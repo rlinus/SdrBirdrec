@@ -4,7 +4,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include <exception>
+#include <stdexcept>
 #include "class_handle.h"
 #include "mexUtils.h"
 #include "Types.h"
@@ -167,8 +167,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			fieldptr = mxGetField(mxParams, 0, "Decimator1_InputFrameSize");
 			if(fieldptr) params.Decimator1_InputFrameSize = Cast::fromMxArray<size_t>(fieldptr);
 
-			/*fieldptr = mxGetField(mxParams, 0, "Decimator2_InputFrameSize");
-			if(fieldptr) params.Decimator2_InputFrameSize = Cast::fromMxArray<size_t>(fieldptr);*/
+			fieldptr = mxGetField(mxParams, 0, "FreqTreckingThreshold");
+			if(fieldptr) params.FreqTreckingThreshold = Cast::fromMxArray<double>(fieldptr);
 
 			fieldptr = mxGetField(mxParams, 0, "Decimator1_Factor");
 			if(fieldptr) params.Decimator1_Factor = Cast::fromMxArray<size_t>(fieldptr);
@@ -342,10 +342,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 	catch (std::exception& e)
 	{
-		std::stringstream error_id, error_txt;
-		error_id << "SdrBirdrecMex: " << cmd;
+		std::stringstream error_txt;
 		error_txt << cmd << ": " << e.what();
-		mexErrMsgIdAndTxt(error_id.str().c_str(), error_txt.str().c_str());
+		mexErrMsgIdAndTxt("SdrBirdrecMex:exception", error_txt.str().c_str());
 	}
 }
 

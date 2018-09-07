@@ -2,6 +2,7 @@
 #include <string>
 #include <memory>
 #include <iostream>
+#include <stdexcept>
 
 #include <tbb/tbb.h>
 
@@ -35,7 +36,7 @@ namespace SdrBirdrec
 		vector<complex<dsp_t>> H2; //(N2/2+1) point positive half FFT of h2
 
 		vector<vector<size_t>> ChannelBands_bins; //list of carrier frequencies ranges measured in bins
-		const size_t CarrierTolerance_bins;
+		const size_t FreqTreckingThreshold_bins;
 
 		vector<fftwcpp::Fft<std::complex<dsp_t>, fftwcpp::forward>> fft1;
 		vector<fftwcpp::Fft<std::complex<dsp_t>, fftwcpp::inverse>> ifft1;
@@ -97,7 +98,7 @@ namespace SdrBirdrec
 							frame->signal_strengths[j*h.params.SDR_ChannelCount + ch] = *argmax_it;
 							frame->carrier_frequencies[j*h.params.SDR_ChannelCount + ch] = h.get_freq_from_bin(argmax);
 
-							if(abs(argmax - h.receive_frequencies_shifted_bins[ch]) > long long(h.CarrierTolerance_bins))
+							if(abs(argmax - h.receive_frequencies_shifted_bins[ch]) > long long(h.FreqTreckingThreshold_bins))
 							{
 								h.receive_frequencies_shifted_bins[ch] = long long(round((double(argmax) - h.params.Decimator1_Nfft / 2) / h.V1)*h.V1 + h.params.Decimator1_Nfft / 2);
 								if(h.receive_frequencies_shifted_bins[ch] >= long long(h.params.Decimator1_Nfft)) h.receive_frequencies_shifted_bins[ch] = h.params.Decimator1_Nfft - 1;
@@ -208,7 +209,8 @@ namespace SdrBirdrec
 			V1{ params.Decimator1_FirFilterCoeffs.size() != 1 ? params.Decimator1_Nfft / (params.Decimator1_FirFilterCoeffs.size()-1) : 1},
 			H1(params.Decimator1_Nfft),
 			H2(params.Decimator2_Nfft / 2 + 1),
-			CarrierTolerance_bins{ params.Decimator1_Nfft / params.Decimator1_Factor / 4 },
+			//FreqTreckingThreshold_bins{ params.Decimator1_Nfft / params.Decimator1_Factor / 4 },
+			FreqTreckingThreshold_bins{ static_cast<size_t>(std::floor(params.Decimator1_Nfft * params.FreqTreckingThreshold / params.SDR_SampleRate)) },
 			spectrums{ params.MonitorRateDivisor, vector<dsp_t>(params.Decimator1_Nfft) },
 			receive_frequencies_shifted_bins(params.SDR_ChannelCount),
 			receive_frequencies_bins(params.SDR_ChannelCount, vector<size_t>(params.MonitorRateDivisor)),
@@ -222,12 +224,12 @@ namespace SdrBirdrec
 			#ifdef VERBOSE
 			std::cout << "ChannelExtractorNode()" << endl;
 			#endif
+
 			//get H1
 			for(int j = 0; j < params.Decimator1_FirFilterCoeffs.size(); ++j) fft1[0].inBufr[j] = complex<dsp_t>(params.Decimator1_FirFilterCoeffs[j]);
 			fill(fft1[0].inBufr + params.Decimator1_FirFilterCoeffs.size(), fft1[0].inBufr + params.Decimator1_Nfft, complex<dsp_t>(0.0)); //zero pad h
 			fft1[0].execute();
 			copy_n(fft1[0].outBufr, params.Decimator1_Nfft, H1.begin());
-			//for(auto &i : H1) i /= sqrt(params.Decimator1_Nfft); // normalize
 
 			fill(fft1[0].inBufr, fft1[0].inBufr + params.Decimator1_Nfft, complex<dsp_t>(0.0));
 
@@ -237,7 +239,6 @@ namespace SdrBirdrec
 
 			fft2[0].execute(); 
 			copy_n(fft2[0].outBufr, fft2[0].outBufr_size, H2.begin());
-			//for(auto &i : H2) i /= sqrt(params.Decimator2_Nfft); // normalize
 
 			fill(fft2[0].inBufr, fft2[0].inBufr + params.Decimator2_Nfft, dsp_t(0.0));
 

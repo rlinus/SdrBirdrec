@@ -79,7 +79,6 @@ if exist('guistate.mat','file')
     handles.sdrcenterfreq_e.String = state.sdrcenterfreq_e.String;
     handles.agc_cb.Value = state.agc_cb.Value;
     handles.tunergain_e.String = state.tunergain_e.String;
-    handles.audiogain_e.String = state.audiogain_e.String;
     handles.squelchlevel_e.String = state.squelchlevel_e.String;
     handles.sg_scaling_e.String = state.sg_scaling_e.String;
     handles.sg_offset_e.String = state.sg_offset_e.String;
@@ -294,7 +293,6 @@ end
 settings.sdr_args = handles.sdr_device_btn.UserData.sdr_args;
 settings.AGC = handles.agc_cb.Value;
 settings.TunerGain = str2double(handles.tunergain_e.String);
-settings.AudioGain = str2double(handles.audiogain_e.String);
 settings.outputfolder = handles.folder_e.String;
 settings.fn = handles.filename_e.String;
 settings.split_files = handles.split_files_cb.Value;
@@ -338,13 +336,10 @@ if isempty(settings.sdr_args)
     return;
 end
 
-% gui_settings.full_fn = [gui_settings.outputfolder '\' gui_settings.fn '.mat'];
-% if exist(gui_settings.full_fn,'file')
-%     choice = questdlg(sprintf('The file %s already exists. Do you want to overwrite it?',gui_settings.fn),'Warning!', 'Yes', 'No', 'No');
-%     if strcmpi(choice,'No')
-%         return;
-%     end
-% end
+if isempty(settings.channel_list)
+    errordlg('No SDR channels defined.')
+    return;
+end
 
 hObject.Enable = 'off';
 handles.stoprec_btn.Enable = 'on';
@@ -471,7 +466,6 @@ state.file_duration_e.String = handles.file_duration_e.String;
 state.sdrcenterfreq_e.String = handles.sdrcenterfreq_e.String;
 state.agc_cb.Value = handles.agc_cb.Value;
 state.tunergain_e.String = handles.tunergain_e.String;
-state.audiogain_e.String = handles.audiogain_e.String;
 state.squelchlevel_e.String = handles.squelchlevel_e.String;
 state.sg_scaling_e.String = handles.sg_scaling_e.String;
 state.sg_offset_e.String = handles.sg_offset_e.String;
@@ -501,29 +495,6 @@ end
 
 
 delete(hObject);
-
-
-
-function audiogain_e_Callback(hObject, eventdata, handles)
-% hObject    handle to audiogain_e (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of audiogain_e as text
-%        str2double(get(hObject,'String')) returns contents of audiogain_e as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function audiogain_e_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to audiogain_e (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
 
 
 % --- Executes on button press in agc_cb.

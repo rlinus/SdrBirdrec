@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <stdexcept>
 #include <SoapySDR/Logger.hpp>
 #include <SoapySDR/Modules.hpp>
 #include <SoapySDR/Device.hpp>

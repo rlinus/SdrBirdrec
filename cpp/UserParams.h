@@ -31,6 +31,8 @@ namespace SdrBirdrec
 		size_t Decimator1_Factor = 20;
 		size_t Decimator2_Factor = 10;
 
+		double FreqTreckingThreshold = SDR_SampleRate / Decimator1_Factor / 4;
+
 		vector<dsp_t> Decimator1_FirFilterCoeffs = { 1.0 };
 		vector<dsp_t> Decimator2_FirFilterCoeffs = { 1.0 };
 		vector<vector<dsp_t>> IirFilterCoeffs;

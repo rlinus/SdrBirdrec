@@ -78,6 +78,10 @@ namespace SdrBirdrec
 				throw invalid_argument("SDR_SampleRate must be dividable by (Decimator1_Factor * Decimator2_Factor)");
 			if(SDR_ChannelFrameSize * (double(Decimator1_Factor * Decimator2_Factor)*MonitorRate) != SDR_SampleRate)
 				throw invalid_argument("SDR_SampleRate must be dividable by (Decimator1_Factor * Decimator2_Factor * MonitorRate)");
+			if(FreqTreckingThreshold >= SDR_IntermediateSampleRate / 2)
+				throw invalid_argument("FreqTreckingThreshold must be smaller then SDR_SampleRate/Decimator1_Factor/2");
+			if(FreqTreckingThreshold < 0)
+				throw invalid_argument("FreqTreckingThreshold must be positive");
 
 			if(NumSdrSamplesPerTrackingSample % Decimator1_InputFrameSize != 0)
 				throw invalid_argument("Decimator1_InputFrameSize must be a divisor of (SDR_SampleRate / SDR_TrackingRate)");
@@ -88,6 +92,7 @@ namespace SdrBirdrec
 
 			if(Decimator2_FilterOrder % Decimator2_Factor != 0) //condition 1 (Borgerding 2006)
 				throw invalid_argument("the Decimator2_FirFilter order must be an integer multiple of Decimator2_Factor");
+
 
 			// find Decimator2_InputFrameSize ~= 4 * Decimator2_FilterOrder && and which is dividable by Decimator2_Factor (Borgerding 2006)
 			Decimator2_InputFrameSize = 4 * Decimator2_FilterOrder;

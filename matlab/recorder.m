@@ -52,7 +52,7 @@ if ~settings.split_files
     params.SdrReceiveFreqFilename = [settings.outputfolder '\' settings.fn '_SdrReceiveFreq.w64'];
     params.DAQmxChannelsFilename = [settings.outputfolder '\' settings.fn '_DAQmxChannels.w64'];
 else
-    params.SdrChannelsFilename = [settings.outputfolder '\' settings.fn '_SdrChannels.*.w64'];
+    params.SdrChannelsFilename = [settings.outputfolder '\' settings.fn '_SdrChannels.*.w64']; %any * characters will be replaced with i_split
     params.SdrSignalStrengthFilename = [settings.outputfolder '\' settings.fn '_SdrSignalStrength.*.w64'];
     params.SdrCarrierFreqFilename = [settings.outputfolder '\' settings.fn '_SdrCarrierFreq.*.w64'];
     params.SdrReceiveFreqFilename = [settings.outputfolder '\' settings.fn '_SdrReceiveFreq.*.w64'];
@@ -60,8 +60,8 @@ else
 end
 
 %% udp trigger messages
-udp_start_msg = ['sdrbirdrec::start::' params.SdrChannelsFilename];
-udp_stop_msg = 'sdrbirdrec::stop';
+udp_start_msg = ['sdrbirdrec::start::' params.SdrChannelsFilename]; %any * characters will be replaced with i_split
+udp_stop_msg = 'sdrbirdrec::stop'; %any * characters will be replaced with i_split
 
 %% Check for existing files
 if ~isempty(dir(params.SdrChannelsFilename)) || ... 
@@ -129,9 +129,8 @@ params.Decimator1_Factor = Decimator1_Factor;
 params.Decimator2_Factor = Decimator2_Factor;
 params.Decimator1_FirFilterCoeffs = ddc_filter.Coefficients;
 params.Decimator2_FirFilterCoeffs = lp_filter.Coefficients;
-params.IirFilterCoeffs = []; %hp_filter.Coefficients;
+params.FreqTreckingThreshold = fs_if / 4;
 params.SDR_ChannelBands = settings.channel_list{:,3:4}*1e6;
-params.SdrChannels_AudioGain = settings.AudioGain;
 params.SDR_StartOnTrigger = settings.sdr_startontrigger;
 params.DAQmx_ChannelCount = settings.daqmx_nch;
 params.DAQmx_AIChannelList = settings.daqmx_channellist;
@@ -219,11 +218,11 @@ while is_recording
     %gui_handles.status_txt.String = 'Init...';
     
     if settings.split_files
-        params.SdrChannelsFilename = [settings.outputfolder '\' settings.fn '_SdrChannels.' num2str(i_split) '.w64'];
-        params.SdrSignalStrengthFilename = [settings.outputfolder '\' settings.fn '_SdrSignalStrength.' num2str(i_split) '.w64'];
-        params.SdrCarrierFreqFilename = [settings.outputfolder '\' settings.fn '_SdrCarrierFreq.' num2str(i_split) '.w64'];
-        params.SdrReceiveFreqFilename = [settings.outputfolder '\' settings.fn '_SdrReceiveFreq.' num2str(i_split) '.w64'];
-        params.DAQmxChannelsFilename = [settings.outputfolder '\' settings.fn '_DAQmxChannels.' num2str(i_split) '.w64'];
+        params.SdrChannelsFilename = strrep(params.SdrChannelsFilename, '*', num2str(i_split));
+        params.SdrSignalStrengthFilename = strrep(params.SdrSignalStrengthFilename, '*', num2str(i_split));
+        params.SdrCarrierFreqFilename = strrep(params.SdrCarrierFreqFilename, '*', num2str(i_split));
+        params.SdrReceiveFreqFilename = strrep(params.SdrReceiveFreqFilename, '*', num2str(i_split));
+        params.DAQmxChannelsFilename = strrep(params.DAQmxChannelsFilename, '*', num2str(i_split));
     end
     
     % init stream
@@ -238,7 +237,7 @@ while is_recording
     drawnow;
 
     % send udp start trigger 
-    if settings.udp; fprintf(udph, udp_start_msg); end
+    if settings.udp; fprintf(udph, strrep(udp_start_msg, '*', num2str(i_split))); end
 
 
     try
@@ -290,7 +289,7 @@ while is_recording
 
     sdrBirdrecBackend.stopRec();
     
-    if settings.udp; fprintf(udph, udp_stop_msg); end % send udp stop trigger 
+    if settings.udp; fprintf(udph, strrep(udp_stop_msg, '*', num2str(i_split))); end % send udp stop trigger 
     
     i_split = i_split+1;
 end

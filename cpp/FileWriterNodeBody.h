@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <exception>
 #include <stdexcept>
 #include <tbb/tbb.h>
 #include <sndfile.hh>

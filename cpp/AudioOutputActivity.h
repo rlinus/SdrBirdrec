@@ -5,7 +5,6 @@
 #include <iostream>
 #include <sstream>
 #include <memory>
-#include <exception>
 #include <stdexcept>
 #include <tbb/tbb.h>
 #include <portaudio.h>
@@ -142,7 +141,7 @@ namespace SdrBirdrec
 			int error = src_process(src_state, &src_data);
 			if(error) throw runtime_error("AudioOutputActivitiy: libsamplerate error: Error in src_process()");
 			dataOut->resize(src_data.output_frames_gen*channelCount);
-			if(src_data.input_frames_used != src_data.input_frames) cout << "AudioOutputActivitiy: stream discontinuity" << endl;
+			//if(src_data.input_frames_used != src_data.input_frames) cout << "AudioOutputActivitiy: stream discontinuity" << endl;
 
 			queue.push(dataOut);
 			return true;

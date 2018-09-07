@@ -55,6 +55,9 @@ classdef SdrBirdrecBackend < handle
         %   sdr signal [default: 10]. The sample rate of the demodulated
         %   sdr channels is
         %   SDR_SampleRate/(Decimator1_Factor*Decimator2_Factor)
+        % FreqTreckingThreshold:
+        %   If abs(CarrierFreq - ReceiveFreq) > FreqTreckingThreshold the
+        %   ReceiveFreq will be updated.
         % Decimator1_FirFilterCoeffs: a vector containing the FIR filter
         %   coefficients of the first decimation stage.
         % Decimator2_FirFilterCoeffs: a vector containing the FIR filter
@@ -76,7 +79,7 @@ classdef SdrBirdrecBackend < handle
         %   overlaped an must be in the range of
         %   [SDR_CenterFrequency-SDR_SampleRate/2,SDR_CenterFrequency+SDR_SampleRate/2)
         % DAQmx_AIChannelList:
-        %   A list of Physical DAQmx channels in the format described here:
+        %   A list of analog DAQmx channels in the format described here:
         %   http://zone.ni.com/reference/en-XX/help/370466AC-01/mxcncpts/physchannames/
         % DAQmx_ChannelCount:
         %   The number of DAQmx channels you want to record. This number
@@ -114,8 +117,8 @@ classdef SdrBirdrecBackend < handle
         %   method to query device indexes. [default: -1]
         % DataFile_SamplePrecision:
         %   The sample precision of the datafiles. Possible values:
-        %       *int16 [default]
-        %       *float32
+        %       *float32 [default]
+        %       *int16 
         % SdrChannelsFilename:
         %   The name of the sdr channels datafile. It's format is Wave64
         %   (.w64)
@@ -174,7 +177,7 @@ classdef SdrBirdrecBackend < handle
         
         %% isRecording
         % returns if a recording is started
-        function x = isStreaming(this)
+        function x = isRecording(this)
             x = SdrBirdrecMex('isRecording', this.objectHandle);
         end
         

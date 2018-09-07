@@ -11,6 +11,7 @@
 #include <exception>
 #include <stdexcept>
 #include <chrono>
+#include <windows.h> //for thread priority
 
 #include <tbb/tbb.h>
 #include <SoapySDR/Device.hpp>
@@ -52,7 +53,7 @@ namespace SdrBirdrec
 
 		SdrSourceActivity(const InitParams &params, SyncedLogger &logger) :
 			logger{ logger },
-			poolSize{ size_t(round(5 * params.SDR_SampleRate / params.SDR_FrameSize)) },
+			poolSize{ size_t(round(10 * params.SDR_SampleRate / params.SDR_FrameSize)) },
 			params{ params },
 			sdr_device{ params.SDR_DeviceArgs },
 			bufferPool{ poolSize, SdrDataFrame(params) }
@@ -208,6 +209,11 @@ namespace SdrBirdrec
 
 		static void receiverThreadFunc(SdrSourceActivity* h)
 		{
+			if(!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL))
+			{
+				cout << "SdrSourceActivity: Couldn't set thread priority" << endl;
+			}
+
 			try
 			{
 				size_t output_frame_ctr = 0;
@@ -232,6 +238,15 @@ namespace SdrBirdrec
 						long long timeNs = 0;
 
 						int nread = h->sdr_device.readStream(&buf_ptr, std::min(outputBufferSize - outputBufferPos, h->streamMTUsize), flags, timeNs, 10000000);
+
+						////initial non-blocking read for all available samples that can fit into the buffer
+						//int nread = h->sdr_device.readStream(&buf_ptr, outputBufferSize - outputBufferPos, flags, timeNs, 0);
+
+						////otherwise perform a blocking read on the single transfer unit size (in samples)
+						//if(nread == 0 || nread == SOAPY_SDR_TIMEOUT)
+						//{
+						//	nread = h->sdr_device.readStream(&buf_ptr, std::min(outputBufferSize - outputBufferPos, h->streamMTUsize), flags, timeNs, 10000000);
+						//}
 
 						if(nread == SOAPY_SDR_OVERFLOW)
 						{
