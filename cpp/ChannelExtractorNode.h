@@ -25,6 +25,7 @@ namespace SdrBirdrec
 	class ChannelExtractorNode : public function_node<shared_ptr<SdrDataFrame>, shared_ptr<SdrDataFrame>>
 	{
 	private:
+		SyncedLogger & logger;
 		const InitParams params;
 
 		const size_t W1; //no. Decimator1 input frames per sdr frame
@@ -47,6 +48,7 @@ namespace SdrBirdrec
 		vector<BiquadFilter<dsp_t>> hp_filters;
 
 		// state variables
+		size_t frame_ctr = 0;
 		vector<vector<dsp_t>> spectrums;
 		vector<dsp_t> fm_demod_state;
 
@@ -196,13 +198,15 @@ namespace SdrBirdrec
 					copy_n(intermediate_frame.cend() - h.params.Decimator2_FilterOrder, h.params.Decimator2_FilterOrder, h.fft2[ch].inBufr);
 				});
 
+				++h.frame_ctr;
 				return frame;
 			}
 		};
 	public:
-		ChannelExtractorNode(graph &g, const InitParams &params) :
+		ChannelExtractorNode(graph &g, const InitParams &params, SyncedLogger &logger) :
 			function_node<shared_ptr<SdrDataFrame>, shared_ptr<SdrDataFrame>>(g, serial, f_body(*this)),
 			params{ params },
+			logger{ logger },
 			W1{ params.SDR_FrameSize / params.Decimator1_InputFrameSize },
 			W2{ params.SDR_IntermediateFrameSize / params.Decimator2_InputFrameSize },
 			//V1{ params.Decimator1_Nfft / params.Decimator1_Factor },

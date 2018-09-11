@@ -58,7 +58,7 @@ namespace SdrBirdrec
 			outputSampleRate = deviceInfo->defaultSampleRate; //set output SR to default SR of device
 
 			PaStreamParameters outputParameters;
-			outputParameters.channelCount = channelCount;
+			outputParameters.channelCount = (int) channelCount;
 			outputParameters.device = deviceIndex;
 			outputParameters.hostApiSpecificStreamInfo = NULL;
 			outputParameters.sampleFormat = sampleFormat;
@@ -134,7 +134,7 @@ namespace SdrBirdrec
 			src_data.input_frames = data.size() / channelCount;
 			src_data.data_in = data.data();
 
-			src_data.output_frames = std::ceil(src_data.input_frames*src_data.src_ratio);
+			src_data.output_frames = (long) std::ceil(src_data.input_frames*src_data.src_ratio);
 			auto dataOut = make_shared<vector<float>>(src_data.output_frames*channelCount);
 			src_data.data_out = dataOut->data();
 

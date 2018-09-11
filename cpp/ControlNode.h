@@ -56,6 +56,7 @@ namespace SdrBirdrec
 		multifunction_node_type mf;
 		queue_node< MonitorSettingsType > monitor_settings_queue;
 
+		SyncedLogger & logger;
 		const InitParams params;
 		AudioOutputActivitiy &audioOutputActivitiy;
 		MonitorSettings monitorSettings;
@@ -127,11 +128,12 @@ namespace SdrBirdrec
 		};
 
 	public:
-		ControlNode(graph &g, const InitParams &params, AudioOutputActivitiy &audioOutputActivitiy) :
+		ControlNode(graph &g, const InitParams &params, AudioOutputActivitiy &audioOutputActivitiy, SyncedLogger &logger) :
 			j(g),
 			mf(g, serial, mf_body(*this)),
 			monitor_settings_queue{ g },
 			params{ params },
+			logger{ logger },
 			audioOutputActivitiy{ audioOutputActivitiy } 
 		{
 #ifdef VERBOSE

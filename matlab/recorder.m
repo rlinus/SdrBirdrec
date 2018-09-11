@@ -281,7 +281,7 @@ while is_recording
 
 
     catch ME
-        sdrBirdrecBackend.stopStream();
+        sdrBirdrecBackend.stopRec();
         delete(texthandles);
         if settings.udp; fclose(udph); end
         ME.rethrow;

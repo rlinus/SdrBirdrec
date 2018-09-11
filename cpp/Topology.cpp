@@ -8,7 +8,6 @@ namespace SdrBirdrec
 
 	Topology::Topology(const InitParams &params) :
 		params{ params },
-		isStreamActiveFlag{ false },
 		logger{ params.LogFilename }
 	{
 		#ifdef VERBOSE
@@ -51,10 +50,12 @@ namespace SdrBirdrec
 
 	shared_ptr<MonitorDataFrame> Topology::getMonitorDataFrame(void)
 	{
+		logger.logbuffer2cout();
 		shared_ptr<MonitorDataFrame> frame{ nullptr };
 		outOverwriteNode.try_get(frame);
 		while(frame == lastOutputFrame)
 		{
+			if(streamErrorFlag) throw runtime_error("Topology: stream error");
 			this_thread::yield();
 			outOverwriteNode.try_get(frame);
 		}

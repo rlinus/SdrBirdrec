@@ -26,27 +26,34 @@ namespace SdrBirdrec
 			logfile.close();
 		}
 
-		void write_line(const string& msg, bool to_cout = true)
+		void write_line(const string& msg)
 		{
 			lock_guard<mutex> lock(m);
 			logfile << msg << endl;
-			if(to_cout) cout << msg << endl;
+			logbuffer << msg << endl;
 		}
 
-		void write(const string& msg, bool to_cout = true)
+		void write(const string& msg)
 		{
 			lock_guard<mutex> lock(m);
 			logfile << msg;
 			logfile.flush();
-			if(to_cout)
-			{
-				cout << msg;
-				cout.flush();
-			}
+			logbuffer << msg;
+			logbuffer.flush();
+		}
+
+		void logbuffer2cout()
+		{
+			lock_guard<mutex> lock(m);
+			cout << logbuffer.str();
+			cout.flush();
+			logbuffer.str("");
+			logbuffer.clear();
 		}
 
 	private:
 		ofstream logfile;
+		ostringstream logbuffer;
 		mutex m;
 	};
 }

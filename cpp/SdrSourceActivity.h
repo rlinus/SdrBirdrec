@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <complex>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -33,6 +34,7 @@ namespace SdrBirdrec
 	{
 	private:
 		SyncedLogger &logger;
+		std::atomic<bool> &streamErrorFlag;
 
 		size_t poolSize;
 		size_t streamMTUsize;
@@ -44,15 +46,15 @@ namespace SdrBirdrec
 		SoapyDevice sdr_device;
 		ObjectPool< SdrDataFrame > bufferPool;
 		std::thread receiverThread;
-		std::thread serviceThread;
 		long long activationTimeNs = 0;
 		successor_type* successor = nullptr;
 
 		const std::chrono::duration<double> externalClockLockTimeout{ 2.0 }; //how long to wait for pll lock
 	public:
 
-		SdrSourceActivity(const InitParams &params, SyncedLogger &logger) :
+		SdrSourceActivity(const InitParams &params, SyncedLogger &logger, std::atomic<bool> &streamErrorFlag) :
 			logger{ logger },
+			streamErrorFlag{ streamErrorFlag },
 			poolSize{ size_t(round(10 * params.SDR_SampleRate / params.SDR_FrameSize)) },
 			params{ params },
 			sdr_device{ params.SDR_DeviceArgs },
@@ -158,6 +160,9 @@ namespace SdrBirdrec
 			if(!successor) throw logic_error("SdrSourceActivity: Can't activate stream, because no successor is registered.");
 			while(receiverThread.joinable()) this_thread::yield();
 
+			//start receiverThread (thread will wait till isStreamActiveFlag=true);
+			receiverThread = thread(&SdrSourceActivity::receiverThreadFunc, this);
+
 			//timing
 			int activateFlags = 0;
 			sdr_device.handle->setHardwareTime(0);
@@ -169,19 +174,12 @@ namespace SdrBirdrec
 				activationTimeNs = 24 * 3600 * 1e9;
 				sdr_device.handle->setHardwareTime(activationTimeNs, "PPS"); //hack to activate stream on next PPS: set time to value far from now on next pps, activate stream at that time 
 			}
-			//else if(sdr_device.handle->hasHardwareTime())
-			//{
-			//	activationTimeNs = 500e6;
-			//	sdr_device.handle->setHardwareTime(0);
-			//}
 
 			//activate sdr stream
-			if(sdr_device.activateRxStream(activateFlags, activationTimeNs) != 0) throw std::runtime_error("A Problem occured. Sdr stream couldn't be activated.");
+			if(sdr_device.activateRxStream(activateFlags, activationTimeNs) != 0) throw std::runtime_error("SdrSourceActivity: A Problem occured. SDR stream couldn't be activated.");
 
-			//start threads
 			isStreamTerminatedFlag = false;
 			isStreamActiveFlag = true;
-			receiverThread = thread(&SdrSourceActivity::receiverThreadFunc, this);
 		}
 
 		void deactivate()
@@ -213,20 +211,22 @@ namespace SdrBirdrec
 			{
 				cout << "SdrSourceActivity: Couldn't set thread priority" << endl;
 			}
-
+			
 			try
 			{
 				size_t output_frame_ctr = 0;
 				bool sdrBackPressureReportedFlag = false;
 
 				uint64_t sampleTickCtr = 0;
-				size_t numDroppedSamples;
+				size_t numDroppedSamples = 0;
 
 				size_t outputBufferPos = 0;
 				const size_t outputBufferSize = h->params.SDR_FrameSize;
 				shared_ptr<SdrDataFrame> frame = h->bufferPool.acquire();
 				if(!frame) runtime_error("no buffer available");
 				frame->index = 0;
+
+				while(!h->isStreamActiveFlag) this_thread::yield();
 
 				while(h->isStreamActiveFlag)
 				{
@@ -238,6 +238,9 @@ namespace SdrBirdrec
 						long long timeNs = 0;
 
 						int nread = h->sdr_device.readStream(&buf_ptr, std::min(outputBufferSize - outputBufferPos, h->streamMTUsize), flags, timeNs, 10000000);
+
+
+						if(sampleTickCtr == 0 && nread == SOAPY_SDR_TIMEOUT && h->params.SDR_StartOnTrigger) throw runtime_error("SdrSourceActivity: SOAPY_SDR_TIMEOUT error. The trigger signal has not been detected.");
 
 						////initial non-blocking read for all available samples that can fit into the buffer
 						//int nread = h->sdr_device.readStream(&buf_ptr, outputBufferSize - outputBufferPos, flags, timeNs, 0);
@@ -301,10 +304,12 @@ namespace SdrBirdrec
 						frame->index = ++output_frame_ctr;
 					}
 				}
+
 				frame = nullptr;
 			}
 			catch(exception e)
 			{
+				h->streamErrorFlag = true;
 				stringstream strstream;
 				strstream << "SdrSourceActivity: receiver thread exception: " << e.what() << endl;
 				h->logger.write(strstream.str());

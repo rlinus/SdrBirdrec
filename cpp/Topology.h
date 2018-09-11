@@ -32,7 +32,8 @@ namespace SdrBirdrec
 		bool isStreamActive() const { return isStreamActiveFlag; }
 
 	private:
-		std::atomic<bool> isStreamActiveFlag;
+		std::atomic<bool> isStreamActiveFlag = false;
+		std::atomic<bool> streamErrorFlag = false;
 
 		const InitParams params;
 		SyncedLogger logger;
@@ -40,11 +41,11 @@ namespace SdrBirdrec
 		tbb::flow::graph g;
 
 		NIDAQmxSourceActivitiy nIDAQmxSourceActivitiy{ params, logger };
-		SdrSourceActivity sdrSourceActivity{ params, logger };	
+		SdrSourceActivity sdrSourceActivity{ params, logger, streamErrorFlag };
 		AudioOutputActivitiy audioOutputActivitiy{ 1, params.AudioOutput_DeviceIndex };
 
-		ChannelExtractorNode channelExtractorNode{ g, params };
-		ControlNode controlNode{ g, params, audioOutputActivitiy };
+		ChannelExtractorNode channelExtractorNode{ g, params, logger };
+		ControlNode controlNode{ g, params, audioOutputActivitiy, logger };
 		tbb::flow::function_node< typename FileWriterNodeBody::input_type > fileWriterNode{ g, serial,  FileWriterNodeBody(params) };
 		tbb::flow::overwrite_node< std::shared_ptr<MonitorDataFrame> > outOverwriteNode{ g };
 	};
