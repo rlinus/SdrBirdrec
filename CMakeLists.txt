@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
-project (SdrBirdrec VERSION 0.68.1)
+project (SdrBirdrec VERSION 0.68.2)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${PROJECT_SOURCE_DIR}/dependencies)
@@ -18,9 +18,8 @@ set(TBB_DIR "C:/CMake_Packages/tbb2018_20180618oss/cmake"
 # Include sub-projects.
 add_subdirectory ("cpp")
 
-# install additional files
+# install matlab files
 install(FILES matlab/sdr_birdrec.fig matlab/sdr_birdrec.m matlab/SdrBirdrecBackend.m matlab/getChannels.m matlab/getSdrDevice.m matlab/recorder.m DESTINATION .)
-#install(FILES misc/SetUHD_IMAGES_DIR.ps1 misc/install.txt DESTINATION .)
 
 # config cpack
 set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")

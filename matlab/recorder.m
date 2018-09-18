@@ -210,7 +210,7 @@ hbuff = dsp.Buffer(spectrogram_duration*fs_lf,spectrogram_duration*fs_lf-fs_lf/s
 
 %resampler for spectrogram
 hSRC = dsp.SampleRateConverter('Bandwidth',bw_lf, 'InputSampleRate',params.DAQmx_SampleRate,'OutputSampleRate',fs_lf);
-r = hSRC.step(single(zeros(params.DAQmx_SampleRate/sdrSpectrumPlotRate,1)));
+r = hSRC.step(single(zeros(params.DAQmx_SampleRate/sdrSpectrumPlotRate,1))); %init resampler
 
 if ~params.SDR_ExternalClock; gui_handles.pll_txt.String = '-'; end;
 
@@ -266,14 +266,6 @@ while is_recording
                 if mod(i_frame,spectrogram_rate_div)==0;
                     s = (log(abs(spectrogram(d,spectrogram_window,spectrogram_noverlap)))+current_monitor_settings.spectrogram_offset)*current_monitor_settings.spectrogram_scaling;
                     gui_handles.spectrogram_handle.CData = s;
-                end
-            end
-
-            if params.SDR_ExternalClock
-                if sdrBirdrecBackend.isRefPLLlocked()
-                    gui_handles.pll_txt.String = 'locked';
-                else
-                    gui_handles.pll_txt.String = 'unlocked';
                 end
             end
 

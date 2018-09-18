@@ -29,8 +29,6 @@ namespace SdrBirdrec
 
 		shared_ptr<MonitorDataFrame> getMonitorDataFrame(void);
 
-		bool isRefPLLlocked(void) { return sdrSourceActivity.isRefPLLlocked(); }
-
 		void setMonitorOptions(const Kwargs &args) { controlNode.monitorSettingsInputPort.try_put(args); }
 		bool isStreamActive() const { return isStreamActiveFlag; }
 
