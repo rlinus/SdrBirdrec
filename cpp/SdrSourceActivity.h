@@ -30,6 +30,9 @@ namespace SdrBirdrec
 	using namespace std;
 	using namespace tbb::flow;
 
+	/*!
+	* This is the SDR source streaming node.
+	*/
 	class SdrSourceActivity : public sender<shared_ptr<SdrDataFrame>>
 	{
 	private:
@@ -169,7 +172,6 @@ namespace SdrBirdrec
 
 			if(params.SDR_StartOnTrigger)
 			{
-				//sdr_device.handle->setHardwareTime(0);
 				activateFlags = SOAPY_SDR_HAS_TIME;
 				activationTimeNs = 24 * 3600 * 1e9;
 				sdr_device.handle->setHardwareTime(activationTimeNs, "PPS"); //hack to activate stream on next PPS: set time to value far from now on next pps, activate stream at that time 

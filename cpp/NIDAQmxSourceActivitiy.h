@@ -3,11 +3,9 @@
 #include <string>
 #include <iostream>
 #include <vector>
-//#include <fstream>
 #include <sstream>
 #include <thread>
 #include <memory>
-//#include <atomic>
 #include <exception>
 #include <stdexcept>
 
@@ -22,7 +20,9 @@
 
 #include "Types.h"
 
-
+/*!
+* This is the NIDAQmx source streaming node.
+*/
 namespace SdrBirdrec
 {
 	using namespace std;
@@ -73,21 +73,8 @@ namespace SdrBirdrec
 
 				DAQmxErrorCheck(DAQmxExportSignal(taskHandle, DAQmx_Val_StartTrigger, params.DAQmx_TriggerOutputTerminal.c_str()), "DAQmxExportSignal");
 
-				//const int refClkSrc_bS = 128;
-				//char refClkSrc[refClkSrc_bS];
-				//double refClkRate;
-				//DAQmxErrorCheck(DAQmxGetRefClkSrc(taskHandle, refClkSrc, refClkSrc_bS), "DAQmxGetRefClkSrc");
-				//DAQmxErrorCheck(DAQmxGetRefClkRate(taskHandle, &refClkRate), "DAQmxGetRefClkRate");
-				//std::cout << "DAQmxGetRefClkSrc: " << refClkSrc << ", DAQmxGetRefClkRate: " << refClkRate << std::endl;
-
 				if(params.DAQmx_ExternalClock)
 				{
-					////DAQmxErrorCheck(DAQmxConnectTerms("/Dev1/10MHzRefClock", params.DAQmx_ClockInputTerminal.c_str(), DAQmx_Val_DoNotInvertPolarity), "DAQmxConnectTerms");
-					////DAQmxErrorCheck(DAQmxExportSignal(taskHandle, DAQmx_Val_10MHzRefClock, params.DAQmx_ClockInputTerminal.c_str()), "DAQmxExportSignal");
-
-					//DAQmxErrorCheck(DAQmxExportSignal(taskHandle, DAQmx_Val_10MHzRefClock, params.DAQmx_ClockInputTerminal.c_str()), "DAQmxExportSignal");
-
-
 					if(params.DAQmx_ClockInputTerminal.empty()) throw invalid_argument("NIDAQmxSourceActivitiy: DAQmx_ClockInputTerminal is empty");
 					DAQmxErrorCheck(DAQmxSetRefClkSrc(taskHandle, params.DAQmx_ClockInputTerminal.c_str()), "DAQmxSetRefClkSrc");
 					DAQmxErrorCheck(DAQmxSetRefClkRate(taskHandle, 10e6), "DAQmxSetRefClkRate");
@@ -163,6 +150,7 @@ namespace SdrBirdrec
 			}
 			else
 			{
+				//if no DAQmx channels are recorded we just stream empty buffers instead.
 				noChannelsThread = thread([&]() {
 					while(isStreamActiveFlag)
 					{

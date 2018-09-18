@@ -12,6 +12,8 @@ set(SoapySDR_DIR "C:/Program Files/PothosSDR/cmake"
 	CACHE PATH "Path to the folder in the PothosSDR installation that contains the PothosSDRConfig.cmake file" FORCE)
 set(NIDAQmx_ExternalCompilerSupport_DIR "C:/Program Files (x86)/National Instruments/Shared/ExternalCompilerSupport"
 	CACHE PATH "Path to the ExternalCompilerSupport folder in the NIDAQmx installation" FORCE)
+set(TBB_DIR "C:/CMake_Packages/tbb2018_20180618oss/cmake"
+	CACHE PATH "Path to the folder in the Intel TBB installation that contains the PothosSDRConfig.cmake file" FORCE)
 
 # Include sub-projects.
 add_subdirectory ("cpp")

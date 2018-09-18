@@ -5,7 +5,9 @@
 #include <exception>
 #include <SoapySDR/Device.hpp>
 
-
+/*!
+* RAII wrapper for soapy device.
+*/
 class SoapyDevice
 {
 private:

@@ -19,6 +19,8 @@ namespace SdrBirdrec
 
 
 	/**
+	* This processing node extracts the backpack channels from the SDR signal with the method presented in Borgerding2006
+	*
 	* Reference for the overlap-save DDC method:
 	*	Mark Borgerding, 2006, Turning Overlap-Save into a Multiband Mixing, Downsampling Filter Bank
 	*/

@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
-#find packages
+# find packages
 find_package(SoapySDR REQUIRED)
 #get_filename_component(SoapySDR_RUNTIME_DIR ${SoapySDR_DIR}/../bin ABSOLUTE)
 #get_filename_component(SoapySDR_MODULES_DIR "${SoapySDR_DIR}/../lib/SoapySDR/modules0.6" ABSOLUTE)
@@ -17,7 +17,8 @@ find_package(PortAudio REQUIRED)
 find_package(NIDAQmx REQUIRED)
 
 # define mex target
-set(SRC_FILES SdrBirdrecMex.cpp mexUtils.cpp Topology.cpp SdrBirdrecBackend.cpp SdrBirdrecMex.mexw64.manifest)
+set(SRC_FILES SdrBirdrecMex.cpp mexUtils.cpp Topology.cpp SdrBirdrecBackend.cpp SdrBirdrecMex.mexw64.manifest)  
+#Note: The manifest file is necessary for that the right instances of the Intel TBB libraries are loaded. Matlab itself uses Intel TBB, this seems to cause trouble, if there is no manifest file.
 
 matlab_add_mex(NAME SdrBirdrecMex SRC ${SRC_FILES})
 target_include_directories(SdrBirdrecMex PRIVATE ${SoapySDR_INCLUDE_DIRS})

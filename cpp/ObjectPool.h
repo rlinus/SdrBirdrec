@@ -8,8 +8,13 @@
 #include <stdexcept>
 #include <tbb/concurrent_queue.h>
 
-//http://swarminglogic.com/jotting/2015_05_smartpool
 
+/*!
+* This is a memory pool which provides a limited number of buffers. If a buffer is deleted, it is automatically returned to the buffer pool.
+* With this mechanism resource consumption can be limited.
+*
+* Source/Reference: http://swarminglogic.com/jotting/2015_05_smartpool
+*/
 template <typename T>
 class ObjectPool
 {

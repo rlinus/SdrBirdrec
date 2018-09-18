@@ -15,6 +15,9 @@
 
 namespace SdrBirdrec
 {
+	/*!
+	* This class defines the Intel TBB Flow graph topology.
+	*/
 	class Topology
 	{
 	public:

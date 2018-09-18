@@ -4,6 +4,9 @@
 
 namespace SdrBirdrec
 {
+	/*!
+	* Biquad IIR filter
+	*/
 	template<typename T>
 	class BiquadFilter
 	{

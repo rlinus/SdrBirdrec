@@ -20,7 +20,7 @@ namespace SdrBirdrec
 }
 
 /*!
-* \brief Mex wrapper for the SdrBirdrecBackend class
+* Mex wrapper for the SdrBirdrecBackend class
 */
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -103,7 +103,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			const mxArray *mxParams = prhs[2];
 			if(!mxIsStruct(mxParams)) throw std::invalid_argument("params must be a struct.");
 
-			//populate UserParams object with fields of input struct
+			//populate UserParams object with fields of input struct (consult the Matlab class file SdrBirdrecBackend.m for a description of each property)
 			UserParams params;
 			mxArray * fieldptr;
 

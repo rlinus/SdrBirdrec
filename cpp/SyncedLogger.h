@@ -12,6 +12,10 @@ namespace SdrBirdrec
 {
 	using namespace std;
 
+
+	/*!
+	* Thread save logger. Logs to textfile and buffer, that can be output to stdout with call to logbuffer2cout() method.
+	*/
 	class SyncedLogger
 	{
 	public:

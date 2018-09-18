@@ -19,6 +19,9 @@ namespace SdrBirdrec
 	using namespace std;
 	using namespace tbb::flow;
 
+	/*!
+	* Manages sound output. Call try_put() to output signal frames.
+	*/
 	class AudioOutputActivitiy
 	{
 	private:

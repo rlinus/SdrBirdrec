@@ -132,7 +132,7 @@ classdef SdrBirdrecBackend < handle
         %   The name of the Wave64 file that logs the carrier frequencies
         %   of the sdr channels.
         % DAQmxChannelsFilename:
-        %   The name of the DAQmx channels datafile. It's format is Wave64
+        %   The name of the DAQmx channels datafile. Its format is Wave64
         %   (.w64)
         % LogFilename:
         %   The name of the text file that logs buffer overflows. 

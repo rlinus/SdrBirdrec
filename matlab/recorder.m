@@ -89,7 +89,10 @@ gui_handles.status_txt.String = 'Initialization...';
 drawnow;
 
 %% init filters
-filterfile = [fileparts(mfilename('fullpath')) filesep 'filters' num2str(settings.sdr_sample_rate_index) '.mat'];
+%the filter coefficients are stored in a .mat file. If you change filter
+%parameters, first delete the filter .mat files, otherwise the changes will
+%not be effective.
+filterfile = [fileparts(mfilename('fullpath')) filesep 'filters' num2str(settings.sdr_sample_rate_index) '.mat']; 
 
 if exist(filterfile,'file')
     load(filterfile);

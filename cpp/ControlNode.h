@@ -9,41 +9,19 @@
 #include "MonitorDataFrame.h"
 #include "InitParams.h"
 #include "AudioOutputActivity.h"
+#include "MonitorSettings.h"
 
 namespace SdrBirdrec
 {
 	using namespace std;
 	using namespace tbb::flow;
 
+	/**
+	* This composite processing node joins the SDR and NIDAQmx dataframe with a join node and forwards the joint data to the FileWriterNode. Additionally it processes MonitorSetting inputs and outputs MonitorDataFrames and calls AudioOutputActivity.try_put() to output the monitor audio stream.
+	*/
 	class ControlNode
 	{
 	private:
-		struct MonitorSettings
-		{
-		public:
-			enum class ChannelType { sdr, daqmx };
-			const map<string, ChannelType> channelTypeMap = { { "sdr"s, ChannelType::sdr }, { "daqmx"s, ChannelType::daqmx } };
-			bool play_audio = false;
-			ChannelType channel_type = ChannelType::sdr;
-			size_t channel_number = 0;
-			double squelch = -2000.0;
-
-			void set(Kwargs options)
-			{
-				auto search = options.find("play_audio");
-				if(search != options.end()) play_audio = bool(stoi(search->second));
-
-				search = options.find("channel_number");
-				if(search != options.end()) channel_number = stoull(search->second);
-
-				search = options.find("channel_type");
-				if(search != options.end() && channelTypeMap.find(search->second) != channelTypeMap.cend()) channel_type = channelTypeMap.at(search->second);
-
-				search = options.find("squelch");
-				if(search != options.end()) squelch = stod(search->second);
-			}
-		};
-
 		using SdrFrameType = shared_ptr<SdrDataFrame>;
 		using NIDAQmxFrameType = shared_ptr<vector<dsp_t>>;
 		using MonitorSettingsType = Kwargs;

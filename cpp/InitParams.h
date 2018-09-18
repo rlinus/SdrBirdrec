@@ -12,6 +12,9 @@ namespace SdrBirdrec
 {
 	using namespace std;
 
+	/*!
+	* This struct defines some additional settings derived from the UserParams. It also checks the UserParams on construction.
+	*/
 	struct InitParams : public UserParams
 	{
 		size_t SDR_FrameSize;

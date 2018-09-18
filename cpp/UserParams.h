@@ -7,6 +7,9 @@ namespace SdrBirdrec
 {
 	using namespace std;
 
+	/*!
+	* This struct bundles the user settings to configure a new recording. For a description of each setting consult the SdrBirdrecBackend.m file.
+	*/
 	struct UserParams
 	{
 		struct ChannelBand
