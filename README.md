@@ -4,6 +4,10 @@ SDR Birdrec is an open-source software to record FM radio signals transmitted fr
 ## Documentation
 * https://www.authorea.com/321045/Ge2ReNOERhUSYq7S_GMYRw
 
+## Binaries
+Get the binaries from the release page:
+* https://github.com/rlinus/SdrBirdrec/releases
+
 ## Dependencies
 * CMake: as a build system
 * MATLAB: for the frontend and the mex interface to the backend
@@ -18,9 +22,9 @@ SDR Birdrec is an open-source software to record FM radio signals transmitted fr
 This repository contains pre-compiled shared libraries (.dll) for FFTW, PortAudio, libsndfile and libsamplerate to simplify compilation.
 
 ## How to Compile
-* Open this repository with Ms Visual Studio (>= 2017).
+* Open this repository with Microsoft Visual Studio (>= 2017).
 * Open the top-level CMakeLists.txt and change the path of the dependencies on line 9ff. 
-* Right click on CMakeLists.txt in the Solution Explorer and hit `Install`.
+* Right-click on CMakeLists.txt in the Solution Explorer and hit `Install`.
 
 ## Licensing information
-Use, modification and distribution is subject to the GNU General Public License v3.0. See accompanying file `LICENSE.md`.
+Use, modification and distribution of SDR Birdrec is subject to the GNU General Public License v3.0. See the accompanying `LICENSE.md` file.
