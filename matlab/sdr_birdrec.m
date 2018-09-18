@@ -349,7 +349,6 @@ handles_struct = guihandles(handles.radio_spectrum_axes);
 handles_struct2 = guihandles(handles.spectrogram_axes);
 
 gui_handles.status_txt = handles.status_txt;
-gui_handles.pll_txt = handles.pll_txt;
 gui_handles.patch_handle = handles_struct.patch_handle;
 gui_handles.line_handle = handles_struct.line_handle;
 gui_handles.line_handle2 = handles_struct.line_handle2;

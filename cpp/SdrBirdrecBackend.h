@@ -128,50 +128,6 @@ namespace SdrBirdrec
 
 		bool isRecording() { return topology && topology->isStreamActive(); };
 
-		std::vector<std::complex<dsp_t>> test(const Kwargs &args = Kwargs())
-		{
-			int flags = 0;
-			long long timeNs = 0;
-			int nread = 0;
-
-			SoapyDevice sdr_device(args);
-			sdr_device.setupRxStream(std::is_same<SdrBirdrec::dsp_t, double>::value ? std::string(SOAPY_SDR_CF64) : std::string(SOAPY_SDR_CF32));
-			size_t streamMTUsize = sdr_device.getRxStreamMTU();
-			std::vector<std::complex<dsp_t>> buffer(streamMTUsize);
-			void* buf_ptr = (void*)buffer.data();
-
-			sdr_device.activateRxStream();
-			nread = sdr_device.readStream(&buf_ptr, streamMTUsize, flags, timeNs);
-			cout << "nread: " << nread << endl;
-
-			nread = sdr_device.readStream(&buf_ptr, streamMTUsize, flags, timeNs);
-			cout << "nread: " << nread << endl;
-			sdr_device.deactivateRxStream();
-			sdr_device.closeRxStream();
-			sdr_device.setupRxStream(std::is_same<SdrBirdrec::dsp_t, double>::value ? std::string(SOAPY_SDR_CF64) : std::string(SOAPY_SDR_CF32));
-
-			sdr_device.activateRxStream();
-			nread = sdr_device.readStream(&buf_ptr, streamMTUsize, flags, timeNs);
-			cout << "nread: " << nread << endl;
-
-			nread = sdr_device.readStream(&buf_ptr, streamMTUsize, flags, timeNs);
-			cout << "nread: " << nread << endl;
-			sdr_device.deactivateRxStream();
-			//return sdr_device.handle->listSampleRates(SOAPY_SDR_RX, 0);	
-			return buffer;
-		}
-
-		bool isRefPLLlocked()
-		{
-			return topology->isRefPLLlocked();
-		}
-
-		static int staticTest()
-		{
-			return 0;
-		}
-
-
 	private:
 		std::unique_ptr<Topology> topology;
 	};

@@ -223,21 +223,6 @@ classdef SdrBirdrecBackend < handle
             SdrBirdrecMex('setPlayAudio', this.objectHandle, play_audio);
         end
         
-        %% isRefPLLlocked
-        % Check if PLL for the external clock input of the SDR is locked.
-        % Make sure the externel clock is enabled with
-        % 'params.SDR_ExternalClock = true'.
-        %
-        % Returns true if locked and false otherwise.
-        function x = isRefPLLlocked(this)
-            x = SdrBirdrecMex('isRefPLLlocked', this.objectHandle);
-        end
-        
-        %% test
-        function x = test(this)
-            x = SdrBirdrecMex('test', this.objectHandle);
-        end
-        
     end
 	methods(Static)
         %% findSdrDevices

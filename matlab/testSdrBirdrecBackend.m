@@ -53,8 +53,8 @@ params.IirFilterCoeffs = []; %hp_filter.Coefficients;
 params.SDR_ChannelBands = [299, 300; 300.1, 300.6]*1e6;
 params.SdrChannelsFilename = ['E:\SDR_Birdrec_testrec' '\test.w64'];
 %%
-h.initStream(params);
-h.startStream();
+h.initRec(params);
+h.startRec();
 frame = h.getData();
 
 %%

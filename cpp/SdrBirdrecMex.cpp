@@ -63,12 +63,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			return;
 		}
 
-		if (!strcmp("staticTest", cmd)) {
-			if (nlhs < 0 || nrhs < 1) throw std::invalid_argument("Unexpected arguments.");
-			plhs[0] = Cast::toMxArray(SdrBirdrecBackend::staticTest());
-			return;
-		}
-
 		// New
 		if (!strcmp("new", cmd)) {
 			// Check parameters
@@ -322,18 +316,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		if (!strcmp("setPlayAudio", cmd)) {
 			if (nlhs < 0 || nrhs < 3) throw std::invalid_argument("Unexpected arguments.");
 			sdrBirdrecBackend->setPlayAudio(Cast::fromMxArray<bool>(prhs[2]));
-			return;
-		}
-
-		if (!strcmp("isRefPLLlocked", cmd)) {
-			if (nlhs < 0 || nrhs < 2) throw std::invalid_argument("Unexpected arguments.");
-			plhs[0] = Cast::toMxArray(sdrBirdrecBackend->isRefPLLlocked());
-			return;
-		}
-
-		if(!strcmp("test", cmd)) {
-			if(nlhs < 0 || nrhs < 2) throw std::invalid_argument("Unexpected arguments.");
-			plhs[0] = Cast::toMxArray(sdrBirdrecBackend->test());
 			return;
 		}
 
