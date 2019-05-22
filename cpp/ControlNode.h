@@ -62,6 +62,8 @@ namespace SdrBirdrec
 
 				outputFrame->channel_number = h.monitorSettings.channel_number;
 
+				outputFrame->noise_level = frame->noise_level[0];
+
 				switch(h.monitorSettings.channel_type)
 				{
 					case MonitorSettings::ChannelType::sdr:
@@ -72,7 +74,7 @@ namespace SdrBirdrec
 
 						if(h.monitorSettings.play_audio &&
 							h.monitorSettings.channel_number < h.params.SDR_ChannelCount &&
-							frame->signal_strengths[h.monitorSettings.channel_number] > h.monitorSettings.squelch)
+							frame->signal_strengths[h.monitorSettings.channel_number] + frame->noise_level[0] > h.monitorSettings.squelch)
 						{
 							h.audioOutputActivitiy.try_put(outputFrame->output_signal, h.params.SDR_ChannelSampleRate);
 						}

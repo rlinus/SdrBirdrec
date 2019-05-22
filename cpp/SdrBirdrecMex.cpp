@@ -12,12 +12,12 @@
 #include "SdrBirdrecBackend.h"
 #include "UserParams.h"
 
-
 namespace SdrBirdrec
 {
 	mexUtils::redirectOstream2mexPrintf redirect;
 	SdrBirdrecEnvironment environment;
 }
+
 
 /*!
 * Mex wrapper for the SdrBirdrecBackend class
@@ -277,7 +277,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 				"receive_frequencies", frame->receive_frequencies,
 				"output_signal", frame->output_signal,
 				"channel_type", frame->channel_type,
-				"channel_number", frame->channel_number
+				"channel_number", frame->channel_number,
+				"noise_level", frame->noise_level
 			);
 
 			return;

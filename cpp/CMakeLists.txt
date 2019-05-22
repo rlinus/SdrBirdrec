@@ -10,14 +10,27 @@ find_package(Libsamplerate REQUIRED)
 find_package(PortAudio REQUIRED)
 find_package(NIDAQmx REQUIRED)
 
+
+# generate version file
+configure_file (Version.h.in Version.h)
+include_directories("${PROJECT_BINARY_DIR}/cpp")
+
 # define mex target
 set(SRC_FILES SdrBirdrecMex.cpp mexUtils.cpp Topology.cpp SdrBirdrecBackend.cpp SdrBirdrecMex.mexw64.manifest)  
 #Note: The manifest file is necessary for that the right instances of the Intel TBB libraries are loaded. Matlab itself uses Intel TBB, this seems to cause trouble, if there is no manifest file.
+
+
 
 matlab_add_mex(NAME SdrBirdrecMex SRC ${SRC_FILES})
 target_include_directories(SdrBirdrecMex PRIVATE ${SoapySDR_INCLUDE_DIRS})
 target_link_libraries (SdrBirdrecMex ${SoapySDR_LIBRARIES} TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy NIDAQmx::nidaqmx Libsndfile::libsndfile Libsamplerate::libsamplerate PortAudio::portaudio FFTW::single FFTW::double)
 install(TARGETS SdrBirdrecMex DESTINATION bin)
+
+# bugfix for cmake 3.14 (because it set(_link_flags "${_link_flags} /EXPORT:mexCreateMexFunction /EXPORT:mexDestroyMexFunction /EXPORT:mexFunctionAdapter"))
+get_property(LFLAGS TARGET SdrBirdrecMex PROPERTY LINK_FLAGS)
+message(STATUS "LFLAGS = ${LFLAGS}")
+set_property(TARGET SdrBirdrecMex PROPERTY LINK_FLAGS "/EXPORT:mexFunction /EXPORT:mexfilerequiredapiversion")
+
 
 #get location of .dll files from imported targets
 get_property(Libsndfile_LOCATION TARGET Libsndfile::libsndfile PROPERTY LOCATION)

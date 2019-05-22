@@ -1,0 +1,4 @@
+#pragma once
+#include <string>
+
+const std::string PROJECT_VERSION_STRING = "@PROJECT_VERSION@";

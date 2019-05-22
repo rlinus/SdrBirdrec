@@ -1,12 +1,12 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
-project (SdrBirdrec VERSION 0.68.2)
+project (SdrBirdrec VERSION 0.69.0)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${PROJECT_SOURCE_DIR}/dependencies)
 
 # Chache variables
-set(Matlab_ROOT_DIR "C:/Program Files/MATLAB/R2016a"
+set(Matlab_ROOT_DIR "C:/Program Files/MATLAB/R2018b"
 	CACHE PATH "Path to MATLAB root folder" FORCE)
 set(SoapySDR_DIR "C:/Program Files/PothosSDR/cmake"
 	CACHE PATH "Path to the folder in the PothosSDR installation that contains the PothosSDRConfig.cmake file" FORCE)

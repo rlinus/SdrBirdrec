@@ -283,14 +283,23 @@ namespace mexUtils
 	{
 		mxArray * array = mxCreateUninitNumericMatrix(data.size(), 1, mxDOUBLE_CLASS, mxCOMPLEX);
 
+
+#if MX_HAS_INTERLEAVED_COMPLEX
+		/* add interleaved complex API code here */
+		mxComplexDouble* array_ptr = mxGetComplexDoubles(array);
+		for(int i = 0; i < data.size(); ++i) {
+			array_ptr[i].real = data[i].real();
+			array_ptr[i].imag = data[i].imag();
+		}
+#else
 		double* real = (double*)mxGetData(array);
 		double* imag = (double*)mxGetImagData(array);
 
-		for(int i = 0; i<data.size(); ++i)
-		{
+		for(int i = 0; i < data.size(); ++i) {
 			real[i] = data[i].real();
 			imag[i] = data[i].imag();
 		}
+#endif	
 
 		return array;
 	}
@@ -299,14 +308,21 @@ namespace mexUtils
 	{
 		mxArray * array = mxCreateUninitNumericMatrix(data.size(), 1, mxSINGLE_CLASS, mxCOMPLEX);
 
+#if MX_HAS_INTERLEAVED_COMPLEX
+		mxComplexSingle* array_ptr = mxGetComplexSingles(array);
+		for(int i = 0; i < data.size(); ++i) {
+			array_ptr[i].real = data[i].real();
+			array_ptr[i].imag = data[i].imag();
+		}
+#else
 		float* real = (float*)mxGetData(array);
 		float* imag = (float*)mxGetImagData(array);
 
-		for(int i = 0; i<data.size(); ++i)
-		{
+		for(int i = 0; i < data.size(); ++i) {
 			real[i] = data[i].real();
 			imag[i] = data[i].imag();
 		}
+#endif
 
 		return array;
 	}

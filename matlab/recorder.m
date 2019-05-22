@@ -42,35 +42,40 @@ fs_hf = fs_if*Decimator1_Factor; %sdr samplerate
 
 
 %% filenames
-params.LogFilename = [settings.outputfolder '\' settings.fn '_log.txt'];
-SdrChannelListFilename = [settings.outputfolder '\' settings.fn '_SdrChannelList.csv'];
+
 
 if ~settings.split_files
-    params.SdrChannelsFilename = [settings.outputfolder '\' settings.fn '_SdrChannels.w64'];
-    params.SdrSignalStrengthFilename = [settings.outputfolder '\' settings.fn '_SdrSignalStrength.w64'];
-    params.SdrCarrierFreqFilename = [settings.outputfolder '\' settings.fn '_SdrCarrierFreq.w64'];
-    params.SdrReceiveFreqFilename = [settings.outputfolder '\' settings.fn '_SdrReceiveFreq.w64'];
-    params.DAQmxChannelsFilename = [settings.outputfolder '\' settings.fn '_DAQmxChannels.w64'];
+    LogFilename = [settings.outputfolder '\' settings.fn '_log.txt'];
+    SdrChannelListFilename = [settings.outputfolder '\' settings.fn '_SdrChannelList.csv'];
+    SdrChannelsFilename = [settings.outputfolder '\' settings.fn '_SdrChannels.w64'];
+    SdrSignalStrengthFilename = [settings.outputfolder '\' settings.fn '_SdrSignalStrength.w64'];
+    SdrCarrierFreqFilename = [settings.outputfolder '\' settings.fn '_SdrCarrierFreq.w64'];
+    SdrReceiveFreqFilename = [settings.outputfolder '\' settings.fn '_SdrReceiveFreq.w64'];
+    DAQmxChannelsFilename = [settings.outputfolder '\' settings.fn '_DAQmxChannels.w64'];
 else
-    params.SdrChannelsFilename = [settings.outputfolder '\' settings.fn '_SdrChannels.*.w64']; %any * characters will be replaced with i_split
-    params.SdrSignalStrengthFilename = [settings.outputfolder '\' settings.fn '_SdrSignalStrength.*.w64'];
-    params.SdrCarrierFreqFilename = [settings.outputfolder '\' settings.fn '_SdrCarrierFreq.*.w64'];
-    params.SdrReceiveFreqFilename = [settings.outputfolder '\' settings.fn '_SdrReceiveFreq.*.w64'];
-    params.DAQmxChannelsFilename = [settings.outputfolder '\' settings.fn '_DAQmxChannels.*.w64'];
+    LogFilename = [settings.outputfolder '\' settings.fn '_*_log.txt'];
+    SdrChannelListFilename = [settings.outputfolder '\' settings.fn '_*_SdrChannelList.csv'];
+    SdrChannelsFilename = [settings.outputfolder '\' settings.fn '_*_SdrChannels.w64']; %any * characters will be replaced with i_split
+    SdrSignalStrengthFilename = [settings.outputfolder '\' settings.fn '_*_SdrSignalStrength.w64'];
+    SdrCarrierFreqFilename = [settings.outputfolder '\' settings.fn '_*_SdrCarrierFreq.w64'];
+    SdrReceiveFreqFilename = [settings.outputfolder '\' settings.fn '_*_SdrReceiveFreq.w64'];
+    DAQmxChannelsFilename = [settings.outputfolder '\' settings.fn '_*_DAQmxChannels.w64'];
 end
 
 %% udp trigger messages
-udp_start_msg = ['sdrbirdrec::start::' params.SdrChannelsFilename]; %any * characters will be replaced with i_split
+udp_start_msg = ['sdrbirdrec::start::' SdrChannelsFilename]; %any * characters will be replaced with i_split
 udp_stop_msg = 'sdrbirdrec::stop'; %any * characters will be replaced with i_split
 
 %% Check for existing files
-if ~isempty(dir(params.SdrChannelsFilename)) || ... 
-        ~isempty(dir(params.SdrSignalStrengthFilename)) || ...
-        ~isempty(dir(params.SdrCarrierFreqFilename)) || ...
-        ~isempty(dir(params.SdrReceiveFreqFilename)) || ...
-        ~isempty(dir(params.DAQmxChannelsFilename)) || ...
-        exist(params.LogFilename,'file') || ...
-        exist(SdrChannelListFilename,'file')
+if ~isempty(dir(SdrChannelsFilename)) || ... 
+        ~isempty(dir(SdrSignalStrengthFilename)) || ...
+        ~isempty(dir(SdrCarrierFreqFilename)) || ...
+        ~isempty(dir(SdrReceiveFreqFilename)) || ...
+        ~isempty(dir(DAQmxChannelsFilename)) || ...
+        ~isempty(dir(LogFilename)) || ...
+        ~isempty(dir(SdrChannelListFilename))
+%         exist(params.LogFilename,'file') || ...
+%         exist(SdrChannelListFilename,'file')
     
     choice = questdlg(sprintf('Some files already exist, they will be overwritten. Do you want to proceed?'),'Warning!', 'Yes', 'No', 'No');
     if strcmpi(choice,'No')
@@ -78,7 +83,7 @@ if ~isempty(dir(params.SdrChannelsFilename)) || ...
         return;
     end
 end
-if exist(params.LogFilename,'file'); delete(params.LogFilename); end;
+%if exist(params.LogFilename,'file'); delete(params.LogFilename); end;
 
 
 %% global vars (the global vars are updated in the gui)
@@ -154,9 +159,6 @@ params.DAQmx_ClockInputTerminal = settings.daqmx_clockterminal;
 
 %% initalization
 
-% save channel list
-writetable(settings.channel_list, SdrChannelListFilename)
-
 %spectrogram settings
 spectrogram_window = 512;
 spectrogram_noverlap = 0;
@@ -220,13 +222,15 @@ is_recording = true;
 while is_recording
     %gui_handles.status_txt.String = 'Init...';
     
-    if settings.split_files
-        params.SdrChannelsFilename = strrep(params.SdrChannelsFilename, '*', num2str(i_split));
-        params.SdrSignalStrengthFilename = strrep(params.SdrSignalStrengthFilename, '*', num2str(i_split));
-        params.SdrCarrierFreqFilename = strrep(params.SdrCarrierFreqFilename, '*', num2str(i_split));
-        params.SdrReceiveFreqFilename = strrep(params.SdrReceiveFreqFilename, '*', num2str(i_split));
-        params.DAQmxChannelsFilename = strrep(params.DAQmxChannelsFilename, '*', num2str(i_split));
-    end
+    params.SdrChannelsFilename = strrep(SdrChannelsFilename, '*', num2str(i_split));
+    params.SdrSignalStrengthFilename = strrep(SdrSignalStrengthFilename, '*', num2str(i_split));
+    params.SdrCarrierFreqFilename = strrep(SdrCarrierFreqFilename, '*', num2str(i_split));
+    params.SdrReceiveFreqFilename = strrep(SdrReceiveFreqFilename, '*', num2str(i_split));
+    params.DAQmxChannelsFilename = strrep(DAQmxChannelsFilename, '*', num2str(i_split));
+    params.LogFilename = strrep(LogFilename, '*', num2str(i_split));
+    
+    % save channel list
+    writetable(settings.channel_list, strrep(SdrChannelListFilename, '*', num2str(i_split)))
     
     % init stream
     sdrBirdrecBackend.initRec(params);
@@ -249,7 +253,8 @@ while is_recording
         while is_recording && (~settings.split_files || i_frame < sdrSpectrumPlotRate * settings.file_duration * 60)
 
             frame = sdrBirdrecBackend.getMonitorDataFrame();
-
+            %fprintf('%f\n', frame.noise_level);
+            
             %plotting
             gui_handles.line_handle.YData = frame.sdr_spectrum;
             x = frame.receive_frequencies(:,[1, 1, 1])'*1e-6;

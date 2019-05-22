@@ -1,0 +1,10 @@
+This this the changelog file for the SdrBirdrec project.
+
+Release 0.69.0 (pending)
+==========================
+
+- print recording start- and endtime into logfile
+- print SdrBirdrec version number into logfile
+- fix split files naming bug
+- change name format for split files option
+- signal_strengths relative to noise level (noise level is estimated as low-pass filtered median of the spectrogram)

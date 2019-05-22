@@ -11,6 +11,7 @@
 #include "SdrDataFrame.h"
 #include "InitParams.h"
 #include "BiquadFilter.h"
+#include "FIRFilter.h"
 
 namespace SdrBirdrec
 {
@@ -48,6 +49,7 @@ namespace SdrBirdrec
 		vector<fftwcpp::Fft<dsp_t, fftwcpp::inverse>> ifft2;
 
 		vector<BiquadFilter<dsp_t>> hp_filters;
+		FIRFilter<dsp_t> noise_level_filter;
 
 		// state variables
 		size_t frame_ctr = 0;
@@ -115,9 +117,20 @@ namespace SdrBirdrec
 
 							h.receive_frequencies_bins[ch][j] = (h.receive_frequencies_shifted_bins[ch] - h.params.Decimator1_Nfft / 2 + h.params.Decimator1_Nfft) % h.params.Decimator1_Nfft;
 						}
+
+						if(k == 0) frame->sdr_spectrum = h.spectrums[k];
+
+						//calc noise level
+						std::nth_element(h.spectrums[j].begin(), h.spectrums[j].begin() + h.spectrums[j].size() / 2, h.spectrums[j].end());
+						dsp_t noise_level = h.noise_level_filter.process(h.spectrums[j][h.spectrums[j].size() / 2]);
+						frame->noise_level[j] = noise_level;
+						for(size_t ch = 0; ch < h.params.SDR_ChannelCount; ++ch)
+						{
+							frame->signal_strengths[j*h.params.SDR_ChannelCount + ch] = frame->signal_strengths[j*h.params.SDR_ChannelCount + ch] - noise_level;
+						}
 					}
 
-					if(k == 0) frame->sdr_spectrum = h.spectrums[k];
+					
 				});
 
 				tbb::parallel_for(size_t(0), h.params.SDR_ChannelCount, [&](size_t ch)
@@ -225,7 +238,8 @@ namespace SdrBirdrec
 			fft2(params.SDR_ChannelCount, fftwcpp::Fft<dsp_t, fftwcpp::forward>(params.Decimator2_Nfft)),
 			ifft2(params.SDR_ChannelCount, fftwcpp::Fft<dsp_t, fftwcpp::inverse>(params.Decimator2_Nifft)),
 			hp_filters(params.SDR_ChannelCount, BiquadFilter<dsp_t>(params.IirFilterCoeffs)),
-			fm_demod_state(params.SDR_ChannelCount)
+			fm_demod_state(params.SDR_ChannelCount),
+			noise_level_filter(std::vector<dsp_t>(5*params.SDR_TrackingRate, 1.0 / dsp_t(5*params.SDR_TrackingRate)))
 		{
 			#ifdef VERBOSE
 			std::cout << "ChannelExtractorNode()" << endl;

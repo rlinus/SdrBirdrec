@@ -16,5 +16,6 @@ namespace SdrBirdrec
 		std::vector<dsp_t> output_signal;
 		std::string channel_type;
 		size_t channel_number;
+		dsp_t noise_level;
 	};
 }

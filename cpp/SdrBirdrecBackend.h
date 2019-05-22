@@ -19,7 +19,7 @@ namespace SdrBirdrec
 
 	/*!
 	* An object of this class represents a recording. It provides methods to start and control the recording.
-	* Additionally, it provides static mehtods for device discovery. 
+	* Additionally, it provides static methods for device discovery. 
 	*/
 	class SdrBirdrecBackend
 	{
