@@ -1,6 +1,6 @@
 This this the changelog file for the SdrBirdrec project.
 
-Release 0.69.0 (pending)
+Release 0.69.0 (22.04.2019)
 ==========================
 
 - print recording start- and endtime into logfile
