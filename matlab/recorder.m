@@ -63,8 +63,8 @@ else
 end
 
 %% udp trigger messages
-udp_start_msg = ['sdrbirdrec::start::' SdrChannelsFilename]; %any * characters will be replaced with i_split
-udp_stop_msg = 'sdrbirdrec::stop'; %any * characters will be replaced with i_split
+udp_start_msg = 'START'; %any * characters will be replaced with i_split
+udp_stop_msg = 'STOP'; %any * characters will be replaced with i_split
 
 %% Check for existing files
 if ~isempty(dir(SdrChannelsFilename)) || ... 
@@ -217,7 +217,7 @@ r = hSRC.step(single(zeros(params.DAQmx_SampleRate/sdrSpectrumPlotRate,1))); %in
 if ~params.SDR_ExternalClock; gui_handles.pll_txt.String = '-'; end;
 
 %% dsp loop
-i_split = 0;
+i_split = 1;
 is_recording = true;
 while is_recording
     %gui_handles.status_txt.String = 'Init...';
