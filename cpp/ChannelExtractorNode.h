@@ -122,16 +122,22 @@ namespace SdrBirdrec
 
 						//calc noise level
 						std::nth_element(h.spectrums[j].begin(), h.spectrums[j].begin() + h.spectrums[j].size() / 2, h.spectrums[j].end());
-						dsp_t noise_level = h.noise_level_filter.process(h.spectrums[j][h.spectrums[j].size() / 2]);
-						frame->noise_level[j] = noise_level;
-						for(size_t ch = 0; ch < h.params.SDR_ChannelCount; ++ch)
-						{
-							frame->signal_strengths[j*h.params.SDR_ChannelCount + ch] = frame->signal_strengths[j*h.params.SDR_ChannelCount + ch] - noise_level;
-						}
+						frame->noise_level[j] = h.spectrums[j][h.spectrums[j].size() / 2];
 					}
 
 					
 				});
+
+				//filter noise level
+				for (int j = 0; j < h.params.MonitorRateDivisor; ++j)
+				{
+					frame->noise_level[j] = h.noise_level_filter.process(frame->noise_level[j]);
+					for (size_t ch = 0; ch < h.params.SDR_ChannelCount; ++ch)
+					{
+						frame->signal_strengths[j * h.params.SDR_ChannelCount + ch] = frame->signal_strengths[j * h.params.SDR_ChannelCount + ch] - frame->noise_level[j];
+					}
+				}
+				
 
 				tbb::parallel_for(size_t(0), h.params.SDR_ChannelCount, [&](size_t ch)
 				{

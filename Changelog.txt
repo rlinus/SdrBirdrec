@@ -1,5 +1,11 @@
 This this the changelog file for the SdrBirdrec project.
 
+Release 0.69.1 (24.04.2019)
+==========================
+
+- start split files numbering at 1 instead of 0
+- fix noise level calculation bug (could result in crash)
+
 Release 0.69.0 (22.04.2019)
 ==========================
 
