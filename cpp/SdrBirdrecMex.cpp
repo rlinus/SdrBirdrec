@@ -14,7 +14,7 @@
 
 namespace SdrBirdrec
 {
-	mexUtils::redirectOstream2mexPrintf redirect;
+	//mexUtils::redirectOstream2mexPrintf redirect;
 	SdrBirdrecEnvironment environment;
 }
 
