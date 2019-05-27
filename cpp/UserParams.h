@@ -57,6 +57,7 @@ namespace SdrBirdrec
 		int AudioOutput_DeviceIndex = -1;
 
 		string DataFile_SamplePrecision = "float32";
+		string DataFile_Format = "w64";
 
 		string SdrChannelsFilename;
 		string SdrSignalStrengthFilename;

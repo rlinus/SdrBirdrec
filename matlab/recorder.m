@@ -43,23 +43,24 @@ fs_hf = fs_if*Decimator1_Factor; %sdr samplerate
 
 %% filenames
 
+DataFile_Format = 'wav';
 
 if ~settings.split_files
     LogFilename = [settings.outputfolder '\' settings.fn '_log.txt'];
     SdrChannelListFilename = [settings.outputfolder '\' settings.fn '_SdrChannelList.csv'];
-    SdrChannelsFilename = [settings.outputfolder '\' settings.fn '_SdrChannels.w64'];
-    SdrSignalStrengthFilename = [settings.outputfolder '\' settings.fn '_SdrSignalStrength.w64'];
-    SdrCarrierFreqFilename = [settings.outputfolder '\' settings.fn '_SdrCarrierFreq.w64'];
-    SdrReceiveFreqFilename = [settings.outputfolder '\' settings.fn '_SdrReceiveFreq.w64'];
-    DAQmxChannelsFilename = [settings.outputfolder '\' settings.fn '_DAQmxChannels.w64'];
+    SdrChannelsFilename = [settings.outputfolder '\' settings.fn '_SdrChannels.' DataFile_Format];
+    SdrSignalStrengthFilename = [settings.outputfolder '\' settings.fn '_SdrSignalStrength.' DataFile_Format];
+    SdrCarrierFreqFilename = [settings.outputfolder '\' settings.fn '_SdrCarrierFreq.' DataFile_Format];
+    SdrReceiveFreqFilename = [settings.outputfolder '\' settings.fn '_SdrReceiveFreq.' DataFile_Format];
+    DAQmxChannelsFilename = [settings.outputfolder '\' settings.fn '_DAQmxChannels.' DataFile_Format];
 else
     LogFilename = [settings.outputfolder '\' settings.fn '_*_log.txt'];
     SdrChannelListFilename = [settings.outputfolder '\' settings.fn '_*_SdrChannelList.csv'];
-    SdrChannelsFilename = [settings.outputfolder '\' settings.fn '_*_SdrChannels.w64']; %any * characters will be replaced with i_split
-    SdrSignalStrengthFilename = [settings.outputfolder '\' settings.fn '_*_SdrSignalStrength.w64'];
-    SdrCarrierFreqFilename = [settings.outputfolder '\' settings.fn '_*_SdrCarrierFreq.w64'];
-    SdrReceiveFreqFilename = [settings.outputfolder '\' settings.fn '_*_SdrReceiveFreq.w64'];
-    DAQmxChannelsFilename = [settings.outputfolder '\' settings.fn '_*_DAQmxChannels.w64'];
+    SdrChannelsFilename = [settings.outputfolder '\' settings.fn '_*_SdrChannels.' DataFile_Format]; %any * characters will be replaced with i_split
+    SdrSignalStrengthFilename = [settings.outputfolder '\' settings.fn '_*_SdrSignalStrength.' DataFile_Format];
+    SdrCarrierFreqFilename = [settings.outputfolder '\' settings.fn '_*_SdrCarrierFreq.' DataFile_Format];
+    SdrReceiveFreqFilename = [settings.outputfolder '\' settings.fn '_*_SdrReceiveFreq.' DataFile_Format];
+    DAQmxChannelsFilename = [settings.outputfolder '\' settings.fn '_*_DAQmxChannels.' DataFile_Format];
 end
 
 %% udp trigger messages
@@ -150,6 +151,7 @@ params.DAQmx_AILowpassEnable = settings.daqmx_antialiasing;
 params.DAQmx_AILowpassCutoffFreq = 0.45*params.DAQmx_SampleRate;
 params.AudioOutput_DeviceIndex = -1;
 params.DataFile_SamplePrecision = 'float32';
+params.DataFile_Format = DataFile_Format;
 
 params.SDR_ExternalClock = settings.sdr_externalclock;
 params.DAQmx_ExternalClock = settings.daqmx_externalclock;

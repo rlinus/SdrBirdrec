@@ -40,6 +40,7 @@ namespace SdrBirdrec
 		size_t Decimator2_Nifft;
 
 		const map<string, int> DataFile_SamplePrecision_Map = { { "int16", SF_FORMAT_PCM_16 }, { "float32", SF_FORMAT_FLOAT } };
+		const map<string, int> DataFile_Format_Map = { { "w64", SF_FORMAT_W64 }, { "rf64", SF_FORMAT_RF64 }, { "wav", SF_FORMAT_WAV } };
 
 		InitParams(const UserParams &userParams) : UserParams(userParams),
 			SDR_FrameSize{ size_t(SDR_SampleRate / MonitorRate) },
@@ -106,6 +107,9 @@ namespace SdrBirdrec
 
 			// check for valid DataFile_SamplePrecision
 			if(DataFile_SamplePrecision_Map.find(DataFile_SamplePrecision) == DataFile_SamplePrecision_Map.cend()) throw invalid_argument("invalid DataFile_SamplePrecision");
+
+			// check for valid DataFile_Format
+			if (DataFile_SamplePrecision_Map.find(DataFile_Format) == DataFile_Format_Map.cend()) throw invalid_argument("invalid DataFile_Format");
 		}
 
 		void print()

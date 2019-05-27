@@ -36,21 +36,23 @@ namespace SdrBirdrec
 			params{ params },
 			filterDelay{ (size_t)round(params.Decimator1_FilterOrder / (2.0* params.Decimator1_Factor*params.Decimator2_Factor) + params.Decimator2_FilterOrder / (2.0 * params.Decimator2_Factor)) }
 		{
+			auto format = params.DataFile_Format_Map.at(params.DataFile_Format);
+
 			//if filenames are empty or zero channels are requested don't create the files
 			if(!params.SdrChannelsFilename.empty() && params.SDR_ChannelCount != 0)
-				SdrChannelsH = make_shared<SndfileHandle>(params.SdrChannelsFilename, SFM_WRITE, SF_FORMAT_W64 | params.DataFile_SamplePrecision_Map.at(params.DataFile_SamplePrecision), params.SDR_ChannelCount, params.SDR_ChannelSampleRate);
+				SdrChannelsH = make_shared<SndfileHandle>(params.SdrChannelsFilename, SFM_WRITE, format | params.DataFile_SamplePrecision_Map.at(params.DataFile_SamplePrecision), params.SDR_ChannelCount, params.SDR_ChannelSampleRate);
 
 			if(!params.SdrSignalStrengthFilename.empty() && params.SDR_ChannelCount != 0)
-				SdrSignalStrengthH = make_shared<SndfileHandle>(params.SdrSignalStrengthFilename, SFM_WRITE, SF_FORMAT_W64 | SF_FORMAT_FLOAT, params.SDR_ChannelCount, params.SDR_TrackingRate);
+				SdrSignalStrengthH = make_shared<SndfileHandle>(params.SdrSignalStrengthFilename, SFM_WRITE, format | SF_FORMAT_FLOAT, params.SDR_ChannelCount, params.SDR_TrackingRate);
 
 			if(!params.SdrCarrierFreqFilename.empty() && params.SDR_ChannelCount != 0)
-				SdrCarrierFreqH = make_shared<SndfileHandle>(params.SdrCarrierFreqFilename, SFM_WRITE, SF_FORMAT_W64 | SF_FORMAT_FLOAT, params.SDR_ChannelCount, params.SDR_TrackingRate);
+				SdrCarrierFreqH = make_shared<SndfileHandle>(params.SdrCarrierFreqFilename, SFM_WRITE, format | SF_FORMAT_FLOAT, params.SDR_ChannelCount, params.SDR_TrackingRate);
 
 			if(!params.SdrReceiveFreqFilename.empty() && params.SDR_ChannelCount != 0)
-				SdrReceiveFreqH = make_shared<SndfileHandle>(params.SdrReceiveFreqFilename, SFM_WRITE, SF_FORMAT_W64 | SF_FORMAT_FLOAT, params.SDR_ChannelCount, params.SDR_TrackingRate);
+				SdrReceiveFreqH = make_shared<SndfileHandle>(params.SdrReceiveFreqFilename, SFM_WRITE, format | SF_FORMAT_FLOAT, params.SDR_ChannelCount, params.SDR_TrackingRate);
 
 			if(!params.DAQmxChannelsFilename.empty() && params.DAQmx_ChannelCount != 0)
-				DAQmxChannelsH = make_shared<SndfileHandle>(params.DAQmxChannelsFilename, SFM_WRITE, SF_FORMAT_W64 | params.DataFile_SamplePrecision_Map.at(params.DataFile_SamplePrecision), params.DAQmx_ChannelCount, params.DAQmx_SampleRate);
+				DAQmxChannelsH = make_shared<SndfileHandle>(params.DAQmxChannelsFilename, SFM_WRITE, format | params.DataFile_SamplePrecision_Map.at(params.DataFile_SamplePrecision), params.DAQmx_ChannelCount, params.DAQmx_SampleRate);
 		}
 
 		using input_type = tuple<shared_ptr<SdrDataFrame>, shared_ptr<vector<dsp_t>>>;

@@ -107,6 +107,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			fieldptr = mxGetField(mxParams, 0, "DataFile_SamplePrecision");
 			if(fieldptr) params.DataFile_SamplePrecision = Cast::fromMxArray<std::string>(fieldptr);
 
+			fieldptr = mxGetField(mxParams, 0, "DataFile_Format");
+			if (fieldptr) params.DataFile_Format = Cast::fromMxArray<std::string>(fieldptr);
+
 			fieldptr = mxGetField(mxParams, 0, "SdrChannelsFilename");
 			if (fieldptr) params.SdrChannelsFilename = Cast::fromMxArray<std::string>(fieldptr);
 

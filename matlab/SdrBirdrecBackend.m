@@ -117,23 +117,26 @@ classdef SdrBirdrecBackend < handle
         %   method to query device indexes. [default: -1]
         % DataFile_SamplePrecision:
         %   The sample precision of the datafiles. Possible values:
-        %       *float32 [default]
-        %       *int16 
+        %       * 'float32' [default]
+        %       * 'int16''
+		% DataFile_Format:
+        %   The data format of the datafiles. Possible values:
+        %       * 'w64' [default]
+        %       * 'rf64'
+		%		* 'wav'
         % SdrChannelsFilename:
-        %   The name of the sdr channels datafile. It's format is Wave64
-        %   (.w64)
+        %   The name of the sdr channels datafile. 
         % SdrSignalStrengthFilename:
-        %   The name of the Wave64 file that logs the sdr channels signal
+        %   The name of the file that logs the sdr channels signal
         %   strengths.
         % SdrReceiveFreqFilename:
-        %   The name of the Wave64 file that logs the demodulation frequencies
+        %   The name of the file that logs the demodulation frequencies
         %   of the sdr channels.
         % SdrCarrierFreqFilename:
-        %   The name of the Wave64 file that logs the carrier frequencies
+        %   The name of the  file that logs the carrier frequencies
         %   of the sdr channels.
         % DAQmxChannelsFilename:
-        %   The name of the DAQmx channels datafile. Its format is Wave64
-        %   (.w64)
+        %   The name of the DAQmx channels datafile.
         % LogFilename:
         %   The name of the text file that logs buffer overflows. 
         

@@ -88,6 +88,7 @@ namespace SdrBirdrec
 				{
 					std::ostringstream msg;
 					msg << "NIDAQmxSourceActivitiy: DAQmx_SampleRate=" << params.DAQmx_SampleRate << " is not supported by the DAQmx device. The nearest supported rate is " << SampClkRate << endl;
+					DAQmxClearTask(taskHandle);
 					throw invalid_argument(msg.str());
 				}
 

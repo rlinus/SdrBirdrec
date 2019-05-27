@@ -1,5 +1,10 @@
 This this the changelog file for the SdrBirdrec project.
 
+Release 0.69.3 (27.05.2019)
+==========================
+
+- add support for wav and rf64 dataformat
+
 Release 0.69.2 (26.05.2019)
 ==========================
 
