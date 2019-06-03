@@ -42,6 +42,8 @@ namespace SdrBirdrec
 		vector<double> tmpBuffer;
 
 		thread noChannelsThread;
+		bool daqmxBackPressureReportedFlag = false;
+		size_t output_frame_ctr = 0;
 
 		const map<string, int32> TerminalConfigurations = { { "DAQmx_Val_Cfg_Default"s, DAQmx_Val_Cfg_Default }, { "DAQmx_Val_RSE"s, DAQmx_Val_RSE }, { "DAQmx_Val_NRSE"s, DAQmx_Val_NRSE }, { "DAQmx_Val_Diff"s, DAQmx_Val_Diff }, { "DAQmx_Val_PseudoDiff"s, DAQmx_Val_PseudoDiff } };
 	public:
@@ -105,7 +107,7 @@ namespace SdrBirdrec
 			}
 
 			tmpBufferSize = params.DAQmx_FrameSize*params.DAQmx_ChannelCount;
-			bufferPool = make_unique<ObjectPool<vector<dsp_t>>>(100, vector<dsp_t>(tmpBufferSize));
+			bufferPool = make_unique<ObjectPool<vector<dsp_t>>>(params.MonitorRate * 10, vector<dsp_t>(tmpBufferSize));
 			tmpBuffer.resize(tmpBufferSize);
 
 		}
@@ -211,8 +213,19 @@ namespace SdrBirdrec
 		{
 			NIDAQmxSourceActivitiy *h = (NIDAQmxSourceActivitiy*)callbackData;
 
-			NIDAQmxSourceActivitiy::output_type buffer = nullptr;
-			while(!buffer) buffer = h->bufferPool->acquire();
+			NIDAQmxSourceActivitiy::output_type buffer = h->bufferPool->acquire();
+			while (!buffer)
+			{
+				if (!h->daqmxBackPressureReportedFlag)
+				{
+					stringstream strstream2;
+					strstream2 << "NIDAQmxSourceActivity: back pressure at frame " << h->output_frame_ctr << endl;
+					h->logger.write(strstream2.str());
+					h->daqmxBackPressureReportedFlag = true;
+				}
+				this_thread::yield();
+				buffer = h->bufferPool->acquire();
+			}
 			if(buffer->size() != h->tmpBufferSize) buffer->resize(h->tmpBufferSize);
 
 			int32 read = 0;
@@ -241,6 +254,7 @@ namespace SdrBirdrec
 			}
 
 			h->successor->try_put(buffer);
+			++(h->output_frame_ctr);
 			return 0;
 		}
 	};
