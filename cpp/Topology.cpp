@@ -64,12 +64,28 @@ namespace SdrBirdrec
 		logger.logbuffer2cout();
 		shared_ptr<MonitorDataFrame> frame{ nullptr };
 		outOverwriteNode.try_get(frame);
-		while(frame == lastOutputFrame)
+
+		if (frame == lastOutputFrame)
 		{
-			if(streamErrorFlag) throw runtime_error("Topology: stream error");
-			this_thread::yield();
-			outOverwriteNode.try_get(frame);
+			std::chrono::seconds timeout(10);
+			auto start = std::chrono::system_clock::now();
+			while (frame == lastOutputFrame && std::chrono::system_clock::now() - start < timeout)
+			{
+				if (streamErrorFlag) throw runtime_error("Topology: stream error");
+				this_thread::yield();
+				outOverwriteNode.try_get(frame);
+			}
+
+			if (frame == lastOutputFrame) //timeout
+			{
+				sdrSourceActivity.deactivate();
+				nIDAQmxSourceActivitiy.deactivate();
+				g.wait_for_all();
+				throw runtime_error("timeout");
+			}
 		}
+
+
 
 		lastOutputFrame = frame;
 		return frame;

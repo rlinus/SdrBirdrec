@@ -4,6 +4,7 @@ Release 0.69.4 (pending)
 ==========================
 
 - log backpressure for NIDAQmxSourceActivity 
+- timeout for Topology::getMonitorDataFrame() function
 
 Release 0.69.3 (27.05.2019)
 ==========================
