@@ -1,10 +1,11 @@
 This this the changelog file for the SdrBirdrec project.
 
-Release 0.69.4 (pending)
+Release 0.69.4 (05.06.2019)
 ==========================
 
 - log backpressure for NIDAQmxSourceActivity 
 - timeout for Topology::getMonitorDataFrame() function
+- DoneCallback in NIDAQmxSourceActivity to report streaming error to log file
 
 Release 0.69.3 (27.05.2019)
 ==========================

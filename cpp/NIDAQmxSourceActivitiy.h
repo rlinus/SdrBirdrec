@@ -100,6 +100,7 @@ namespace SdrBirdrec
 				if(params.DAQmx_AILowpassEnable) DAQmxErrorCheck(DAQmxSetAILowpassCutoffFreq(taskHandle, "", params.DAQmx_AILowpassCutoffFreq), "DAQmxSetAILowpassCutoffFreq");
 
 				DAQmxErrorCheck(DAQmxRegisterEveryNSamplesEvent(taskHandle, DAQmx_Val_Acquired_Into_Buffer, params.DAQmx_FrameSize, 0, EveryNCallback, (void *)this), "DAQmxRegisterEveryNSamplesEvent");
+				DAQmxErrorCheck(DAQmxRegisterDoneEvent(taskHandle, 0, DoneCallback, (void*)this), "DAQmxRegisterDoneEvent");
 
 
 				DAQmxErrorCheck(DAQmxTaskControl(taskHandle, DAQmx_Val_Task_Verify), "DAQmxTaskControl");
@@ -255,6 +256,23 @@ namespace SdrBirdrec
 
 			h->successor->try_put(buffer);
 			++(h->output_frame_ctr);
+			return 0;
+		}
+
+		static int32 CVICALLBACK DoneCallback(TaskHandle taskHandle, int32 status, void* callbackData)
+		{
+			NIDAQmxSourceActivitiy* h = (NIDAQmxSourceActivitiy*)callbackData;
+
+			if (status != 0)
+			{
+				char errBuff[2048];
+				DAQmxGetExtendedErrorInfo(errBuff, 2048);
+				stringstream strstream;
+				strstream << "NIDAQmxSourceActivitiy: DoneCallback:" << errBuff << endl;
+				h->logger.write(strstream.str());
+				return 0;
+			}
+
 			return 0;
 		}
 	};
