@@ -53,6 +53,8 @@ namespace SdrBirdrec
 		double DAQmx_MaxVoltage = 10.0;
 		bool DAQmx_AILowpassEnable = false;
 		double DAQmx_AILowpassCutoffFreq = 12000.0;
+		string DAQmx_ClockOutputSignalCounter = ""s;
+		double DAQmx_ClockOutputSignalFreq = 0.0;
 
 		int AudioOutput_DeviceIndex = -1;
 

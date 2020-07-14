@@ -35,7 +35,8 @@ namespace SdrBirdrec
 
 		SyncedLogger &logger;
 		successor_type* successor = nullptr;
-		TaskHandle taskHandle = 0;
+		TaskHandle aiTaskHandle = 0;
+		TaskHandle ctrTaskHandle = 0;
 		bool isStreamActiveFlag = false;
 		unique_ptr<ObjectPool< vector<dsp_t> >> bufferPool = nullptr;
 		size_t tmpBufferSize;
@@ -60,51 +61,68 @@ namespace SdrBirdrec
 				if(params.DAQmx_MaxVoltage <= 0) throw invalid_argument("NIDAQmxSourceActivitiy: DAQmx_MaxVoltage must be a positive value");
 				if(TerminalConfigurations.find(params.DAQmx_AITerminalConfig) == TerminalConfigurations.cend()) throw invalid_argument("NIDAQmxSourceActivitiy: invalid DAQmx_AITerminalConfig");
 
-				//config ADC task
-				DAQmxErrorCheck(DAQmxCreateTask("ADC task", &taskHandle), "DAQmxCreateTask");
 
-				DAQmxErrorCheck(DAQmxCreateAIVoltageChan(taskHandle, params.DAQmx_AIChannelList.c_str(), "", TerminalConfigurations.at(params.DAQmx_AITerminalConfig), -params.DAQmx_MaxVoltage, params.DAQmx_MaxVoltage, DAQmx_Val_Volts, NULL), "DAQmxCreateAIVoltageChan");
+
+				//config ADC task
+				DAQmxErrorCheck(DAQmxCreateTask("ADCtask", &aiTaskHandle), "DAQmxCreateTask");
+
+				DAQmxErrorCheck(DAQmxCreateAIVoltageChan(aiTaskHandle, params.DAQmx_AIChannelList.c_str(), "", TerminalConfigurations.at(params.DAQmx_AITerminalConfig), -params.DAQmx_MaxVoltage, params.DAQmx_MaxVoltage, DAQmx_Val_Volts, NULL), "DAQmxCreateAIVoltageChan");
 
 				uInt32 actualChannelCount;
-				DAQmxErrorCheck(DAQmxGetTaskNumChans(taskHandle, &actualChannelCount), "DAQmxGetTaskNumChans");
+				DAQmxErrorCheck(DAQmxGetTaskNumChans(aiTaskHandle, &actualChannelCount), "DAQmxGetTaskNumChans");
 				if(params.DAQmx_ChannelCount != actualChannelCount)
 				{
-					DAQmxClearTask(taskHandle);
+					DAQmxClearTask(aiTaskHandle);
 					throw invalid_argument("NIDAQmxSourceActivitiy: params.DAQmx_ChannelCount doesn't match params.DAQmx_AIChannelList.");
 				}
 
-				DAQmxErrorCheck(DAQmxExportSignal(taskHandle, DAQmx_Val_StartTrigger, params.DAQmx_TriggerOutputTerminal.c_str()), "DAQmxExportSignal");
+				DAQmxErrorCheck(DAQmxExportSignal(aiTaskHandle, DAQmx_Val_StartTrigger, params.DAQmx_TriggerOutputTerminal.c_str()), "DAQmxExportSignal");
 
 				if(params.DAQmx_ExternalClock)
 				{
 					if(params.DAQmx_ClockInputTerminal.empty()) throw invalid_argument("NIDAQmxSourceActivitiy: DAQmx_ClockInputTerminal is empty");
-					DAQmxErrorCheck(DAQmxSetRefClkSrc(taskHandle, params.DAQmx_ClockInputTerminal.c_str()), "DAQmxSetRefClkSrc");
-					DAQmxErrorCheck(DAQmxSetRefClkRate(taskHandle, 10e6), "DAQmxSetRefClkRate");
+					DAQmxErrorCheck(DAQmxSetRefClkSrc(aiTaskHandle, params.DAQmx_ClockInputTerminal.c_str()), "DAQmxSetRefClkSrc");
+					DAQmxErrorCheck(DAQmxSetRefClkRate(aiTaskHandle, 10e6), "DAQmxSetRefClkRate");
 				}
 
-				DAQmxErrorCheck(DAQmxCfgSampClkTiming(taskHandle, "", params.DAQmx_SampleRate, DAQmx_Val_Rising, DAQmx_Val_ContSamps, params.DAQmx_FrameSize), "DAQmxCfgSampClkTiming");
+				DAQmxErrorCheck(DAQmxCfgSampClkTiming(aiTaskHandle, "", params.DAQmx_SampleRate, DAQmx_Val_Rising, DAQmx_Val_ContSamps, params.DAQmx_FrameSize), "DAQmxCfgSampClkTiming");
 
 				double SampClkRate;
-				DAQmxErrorCheck(DAQmxGetSampClkRate(taskHandle, &SampClkRate));
+				DAQmxErrorCheck(DAQmxGetSampClkRate(aiTaskHandle, &SampClkRate));
 				if(SampClkRate - params.DAQmx_SampleRate != 0.0)
 				{
 					std::ostringstream msg;
 					msg << "NIDAQmxSourceActivitiy: DAQmx_SampleRate=" << params.DAQmx_SampleRate << " is not supported by the DAQmx device. The nearest supported rate is " << SampClkRate << endl;
-					DAQmxClearTask(taskHandle);
+					DAQmxClearTask(aiTaskHandle);
 					throw invalid_argument(msg.str());
 				}
 
-				DAQmxErrorCheck(DAQmxCfgInputBuffer(taskHandle, params.DAQmx_FrameSize * 20), "DAQmxCfgInputBuffer");
+				DAQmxErrorCheck(DAQmxCfgInputBuffer(aiTaskHandle, params.DAQmx_FrameSize * 20), "DAQmxCfgInputBuffer");
 
-				DAQmxErrorCheck(DAQmxSetAILowpassEnable(taskHandle, "", params.DAQmx_AILowpassEnable), "DAQmxSetAILowpassEnable");
-				if(params.DAQmx_AILowpassEnable) DAQmxErrorCheck(DAQmxSetAILowpassCutoffFreq(taskHandle, "", params.DAQmx_AILowpassCutoffFreq), "DAQmxSetAILowpassCutoffFreq");
+				DAQmxErrorCheck(DAQmxSetAILowpassEnable(aiTaskHandle, "", params.DAQmx_AILowpassEnable), "DAQmxSetAILowpassEnable");
+				if(params.DAQmx_AILowpassEnable) DAQmxErrorCheck(DAQmxSetAILowpassCutoffFreq(aiTaskHandle, "", params.DAQmx_AILowpassCutoffFreq), "DAQmxSetAILowpassCutoffFreq");
 
-				DAQmxErrorCheck(DAQmxRegisterEveryNSamplesEvent(taskHandle, DAQmx_Val_Acquired_Into_Buffer, params.DAQmx_FrameSize, 0, EveryNCallback, (void *)this), "DAQmxRegisterEveryNSamplesEvent");
-				DAQmxErrorCheck(DAQmxRegisterDoneEvent(taskHandle, 0, DoneCallback, (void*)this), "DAQmxRegisterDoneEvent");
+				DAQmxErrorCheck(DAQmxRegisterEveryNSamplesEvent(aiTaskHandle, DAQmx_Val_Acquired_Into_Buffer, params.DAQmx_FrameSize, 0, EveryNCallback, (void *)this), "DAQmxRegisterEveryNSamplesEvent");
+				DAQmxErrorCheck(DAQmxRegisterDoneEvent(aiTaskHandle, 0, DoneCallback, (void*)this), "DAQmxRegisterDoneEvent");
+
+				DAQmxErrorCheck(DAQmxTaskControl(aiTaskHandle, DAQmx_Val_Task_Verify), "DAQmxTaskControl");
+				DAQmxErrorCheck(DAQmxTaskControl(aiTaskHandle, DAQmx_Val_Task_Commit), "DAQmxTaskControl");
+
+				//camera trigger task
+				DAQmxErrorCheck(DAQmxCreateTask("CounterTask", &ctrTaskHandle), "DAQmxCreateTask");
+
+				if (!params.DAQmx_ClockOutputSignalCounter.empty())
+				{
+					double initialDelay = 0;
+					DAQmxErrorCheck(DAQmxCreateCOPulseChanFreq(ctrTaskHandle, params.DAQmx_ClockOutputSignalCounter.c_str(), "cameraTriggerChannel", DAQmx_Val_Hz, DAQmx_Val_Low, initialDelay, params.DAQmx_ClockOutputSignalFreq, 0.5), "DAQmxCreateCOPulseChanFreq");
+					DAQmxErrorCheck(DAQmxCfgImplicitTiming(ctrTaskHandle, DAQmx_Val_ContSamps, 1000), "DAQmxCfgImplicitTiming");
+					DAQmxErrorCheck(DAQmxCfgDigEdgeStartTrig(ctrTaskHandle, "/Dev1/ai/StartTrigger", DAQmx_Val_Rising), "DAQmxCfgDigEdgeStartTrig");
+					//DAQmxErrorCheck(DAQmxSetExportedCtrOutEventOutputTerm(ctrTaskHandle, "/Dev1/PFI5"), "DAQmxSetExportedCtrOutEventOutputTerm");
+				}
 
 
-				DAQmxErrorCheck(DAQmxTaskControl(taskHandle, DAQmx_Val_Task_Verify), "DAQmxTaskControl");
-				DAQmxErrorCheck(DAQmxTaskControl(taskHandle, DAQmx_Val_Task_Commit), "DAQmxTaskControl");
+				DAQmxErrorCheck(DAQmxTaskControl(ctrTaskHandle, DAQmx_Val_Task_Verify), "DAQmxTaskControl");
+				DAQmxErrorCheck(DAQmxTaskControl(ctrTaskHandle, DAQmx_Val_Task_Commit), "DAQmxTaskControl");
 			}
 
 			tmpBufferSize = params.DAQmx_FrameSize*params.DAQmx_ChannelCount;
@@ -118,7 +136,8 @@ namespace SdrBirdrec
 			if(isStreamActiveFlag) deactivate();
 			if(params.DAQmx_ChannelCount > 0)
 			{
-				DAQmxClearTask(taskHandle);
+				DAQmxClearTask(aiTaskHandle);
+				DAQmxClearTask(ctrTaskHandle);
 			}
 		}
 
@@ -150,7 +169,8 @@ namespace SdrBirdrec
 			isStreamActiveFlag = true;
 			if(params.DAQmx_ChannelCount > 0)
 			{
-				DAQmxErrorCheck(DAQmxStartTask(taskHandle), "DAQmxStartTask", false);
+				DAQmxErrorCheck(DAQmxStartTask(ctrTaskHandle), "DAQmxStartTask", false);
+				DAQmxErrorCheck(DAQmxStartTask(aiTaskHandle), "DAQmxStartTask", false);
 			}
 			else
 			{
@@ -179,7 +199,8 @@ namespace SdrBirdrec
 			isStreamActiveFlag = false;
 			if(params.DAQmx_ChannelCount > 0)
 			{
-				DAQmxErrorCheck(DAQmxStopTask(taskHandle), "DAQmxStopTask", false);
+				DAQmxErrorCheck(DAQmxStopTask(aiTaskHandle), "DAQmxStopTask", false);
+				DAQmxErrorCheck(DAQmxStopTask(ctrTaskHandle), "DAQmxStopTask", false);
 			}
 			else
 			{
@@ -199,10 +220,18 @@ namespace SdrBirdrec
 				stringstream strstream;
 				strstream << "NIDAQmxSourceActivitiy: " << fcnName << ": " << errBuff << endl;
 
-				if(clearTask && taskHandle != 0)
+				if(clearTask)
 				{
-					DAQmxStopTask(taskHandle);
-					DAQmxClearTask(taskHandle);
+					if (aiTaskHandle != 0)
+					{
+						DAQmxStopTask(aiTaskHandle);
+						DAQmxClearTask(aiTaskHandle);
+					}
+					if (ctrTaskHandle != 0)
+					{
+						DAQmxStopTask(ctrTaskHandle);
+						DAQmxClearTask(ctrTaskHandle);
+					}
 				}
 
 				throw runtime_error(strstream.str());
@@ -210,7 +239,7 @@ namespace SdrBirdrec
 			else if(status > 0) cout << "NIDAQmxSourceActivitiy: " << fcnName << " warning. " << endl;
 		}
 
-		static int32 CVICALLBACK EveryNCallback(TaskHandle taskHandle, int32 everyNsamplesEventType, uInt32 nSamples, void *callbackData)
+		static int32 CVICALLBACK EveryNCallback(TaskHandle aiTaskHandle, int32 everyNsamplesEventType, uInt32 nSamples, void *callbackData)
 		{
 			NIDAQmxSourceActivitiy *h = (NIDAQmxSourceActivitiy*)callbackData;
 
@@ -230,7 +259,7 @@ namespace SdrBirdrec
 			if(buffer->size() != h->tmpBufferSize) buffer->resize(h->tmpBufferSize);
 
 			int32 read = 0;
-			int status = DAQmxReadAnalogF64(taskHandle, nSamples, 10.0, DAQmx_Val_GroupByScanNumber, h->tmpBuffer.data(), h->tmpBuffer.size(), &read, NULL);
+			int status = DAQmxReadAnalogF64(aiTaskHandle, nSamples, 10.0, DAQmx_Val_GroupByScanNumber, h->tmpBuffer.data(), h->tmpBuffer.size(), &read, NULL);
 
 			if(status != 0)
 			{
@@ -259,7 +288,7 @@ namespace SdrBirdrec
 			return 0;
 		}
 
-		static int32 CVICALLBACK DoneCallback(TaskHandle taskHandle, int32 status, void* callbackData)
+		static int32 CVICALLBACK DoneCallback(TaskHandle aiTaskHandle, int32 status, void* callbackData)
 		{
 			NIDAQmxSourceActivitiy* h = (NIDAQmxSourceActivitiy*)callbackData;
 

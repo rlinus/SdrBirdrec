@@ -12,7 +12,9 @@ set(SoapySDR_DIR "C:/Program Files/PothosSDR/cmake"
 	CACHE PATH "Path to the folder in the PothosSDR installation that contains the PothosSDRConfig.cmake file" FORCE)
 set(NIDAQmx_ExternalCompilerSupport_DIR "C:/Program Files (x86)/National Instruments/Shared/ExternalCompilerSupport"
 	CACHE PATH "Path to the ExternalCompilerSupport folder in the NIDAQmx installation" FORCE)
-set(TBB_DIR "C:/CMake_Packages/tbb2018_20180618oss/cmake"
+#set(TBB_DIR "C:/CMake_Packages/tbb2018_20180618oss/cmake"
+#	CACHE PATH "Path to the folder in the Intel TBB installation that contains the PothosSDRConfig.cmake file" FORCE)
+set(TBB_DIR "C:/CMake_Packages/tbb2019_20191006oss/cmake"
 	CACHE PATH "Path to the folder in the Intel TBB installation that contains the PothosSDRConfig.cmake file" FORCE)
 
 # Include sub-projects.
@@ -25,4 +27,3 @@ install(FILES matlab/sdr_birdrec.fig matlab/sdr_birdrec.m matlab/SdrBirdrecBacke
 set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")
 set(CPACK_GENERATOR "ZIP")
 include(CPack)
-
