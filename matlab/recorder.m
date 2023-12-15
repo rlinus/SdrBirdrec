@@ -210,7 +210,10 @@ if settings.udp
 end
 
 %buffer for spectrogram
-hbuff = dsp.Buffer(spectrogram_duration*fs_lf,spectrogram_duration*fs_lf-fs_lf/sdrSpectrumPlotRate);
+%hbuff = dsp.Buffer(spectrogram_duration*fs_lf,spectrogram_duration*fs_lf-fs_lf/sdrSpectrumPlotRate);
+hbuff_size = spectrogram_duration*fs_lf;
+hbuff_overlap = spectrogram_duration*fs_lf-fs_lf/sdrSpectrumPlotRate;
+hbuff = dsp.AsyncBuffer;
 
 %resampler for spectrogram
 hSRC = dsp.SampleRateConverter('Bandwidth',bw_lf, 'InputSampleRate',params.DAQmx_SampleRate,'OutputSampleRate',fs_lf);
@@ -236,7 +239,8 @@ while is_recording
     
     % init stream
     sdrBirdrecBackend.initRec(params);
-    hbuff.reset();
+    %hbuff.reset();
+    write(hbuff, zeros(hbuff_size,1));
     
     sdrBirdrecBackend.setSquelch(monitor_settings.squelch_level);
     sdrBirdrecBackend.setChannel(monitor_settings.channel_type, monitor_settings.channel_number);
@@ -265,10 +269,17 @@ while is_recording
 
             if current_monitor_settings.show_spectrogram
                 if strcmpi(frame.channel_type, 'sdr')
-                    d = hbuff.step(frame.output_signal);
+                    write(hbuff,frame.output_signal);
+                    d = read(hbuff, hbuff_size, hbuff_overlap);
+
+                    %d = hbuff.step(frame.output_signal);
                 else %daqmx
                     r = hSRC.step(frame.output_signal);
-                    d = hbuff.step(r);
+
+                    write(hbuff,r);
+                    d = read(hbuff, hbuff_size, hbuff_overlap);
+
+                    %d = hbuff.step(r);
                 end
                 if mod(i_frame,spectrogram_rate_div)==0;
                     s = (log(abs(spectrogram(d,spectrogram_window,spectrogram_noverlap)))+current_monitor_settings.spectrogram_offset)*current_monitor_settings.spectrogram_scaling;
