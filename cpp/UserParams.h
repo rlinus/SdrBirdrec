@@ -54,7 +54,7 @@ namespace SdrBirdrec
 		bool DAQmx_AILowpassEnable = false;
 		double DAQmx_AILowpassCutoffFreq = 12000.0;
 		string DAQmx_ClockOutputSignalCounter = ""s;
-		double DAQmx_ClockOutputSignalFreq = 0.0;
+		double DAQmx_ClockOutputSignalFreq = 10;
 
 		int AudioOutput_DeviceIndex = -1;
 

@@ -253,6 +253,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			fieldptr = mxGetField(mxParams, 0, "DAQmx_AILowpassCutoffFreq");
 			if(fieldptr) params.DAQmx_AILowpassCutoffFreq = Cast::fromMxArray<double>(fieldptr);
 
+			fieldptr = mxGetField(mxParams, 0, "DAQmx_ClockOutputSignalCounter");
+			if (fieldptr) params.DAQmx_ClockOutputSignalCounter = Cast::fromMxArray<std::string>(fieldptr);
+
+			fieldptr = mxGetField(mxParams, 0, "DAQmx_ClockOutputSignalFreq");
+			if (fieldptr) params.DAQmx_ClockOutputSignalFreq = Cast::fromMxArray<double>(fieldptr);
+
 			sdrBirdrecBackend->initRec(params);
 			return;
 		}

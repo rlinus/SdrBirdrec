@@ -80,7 +80,7 @@ classdef SdrBirdrecBackend < handle
         %   [SDR_CenterFrequency-SDR_SampleRate/2,SDR_CenterFrequency+SDR_SampleRate/2)
         % DAQmx_AIChannelList:
         %   A list of analog DAQmx channels in the format described here:
-        %   http://zone.ni.com/reference/en-XX/help/370466AC-01/mxcncpts/physchannames/
+        %   https://www.ni.com/docs/en-US/bundle/daqhelp/page/physchannames.html
         % DAQmx_ChannelCount:
         %   The number of DAQmx channels you want to record. This number
         %   must match the DAQmx_AIChannelList setting. [default: 0]
@@ -90,6 +90,15 @@ classdef SdrBirdrecBackend < handle
 		% DAQmx_ClockInputTerminal:
 		%   The input terminal on the DAQ device to which the external
         %   10MHz clock signal is connected (e.g: '/Dev1/PFI3'). 
+        % DAQmx_ClockOutputSignalCounter:
+        %   Specify a counter (e.g. 'Dev1/ctr0') to output a clock signal
+        %   at the default output terminal of that counter (consult your DAQs
+        %   manual to see which one this is). The clock signal is derived from 
+        %   the DAQmx clock (and hence syncronized). This feature can be used 
+        %   to e.g. trigger frames on an industrial camera. The frequency of 
+        %   the clock can be cofigured with DAQmx_ClockOutputSignalFreq.
+        % DAQmx_ClockOutputSignalFreq: Frequency in Herz of the output clock
+        %   configured with DAQmx_ClockOutputSignalCounter. [default: 10]
         % DAQmx_TriggerOutputTerminal:
         %   An output terminal at which a physical start trigger of the DAQmx 
         %   recording is outputed (e.g: '/Dev1/PFI4').

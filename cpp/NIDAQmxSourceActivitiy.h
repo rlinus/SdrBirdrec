@@ -109,20 +109,29 @@ namespace SdrBirdrec
 				DAQmxErrorCheck(DAQmxTaskControl(aiTaskHandle, DAQmx_Val_Task_Commit), "DAQmxTaskControl");
 
 				//camera trigger task
-				DAQmxErrorCheck(DAQmxCreateTask("CounterTask", &ctrTaskHandle), "DAQmxCreateTask");
-
 				if (!params.DAQmx_ClockOutputSignalCounter.empty())
 				{
+					char devName[100];
+					DAQmxErrorCheck(DAQmxGetNthTaskDevice(aiTaskHandle, 1, devName, 100), "DAQmxGetNthTaskDevice");
+
+					std::string ctrTriggerName = "/" + std::string(devName) + "/ai/StartTrigger"; //correct format: "/Dev1/ai/StartTrigger"
+					//std::cout << "ctrTriggerName: " << ctrTriggerName << endl;
+
 					double initialDelay = 0;
-					DAQmxErrorCheck(DAQmxCreateCOPulseChanFreq(ctrTaskHandle, params.DAQmx_ClockOutputSignalCounter.c_str(), "cameraTriggerChannel", DAQmx_Val_Hz, DAQmx_Val_Low, initialDelay, params.DAQmx_ClockOutputSignalFreq, 0.5), "DAQmxCreateCOPulseChanFreq");
-					DAQmxErrorCheck(DAQmxCfgImplicitTiming(ctrTaskHandle, DAQmx_Val_ContSamps, 1000), "DAQmxCfgImplicitTiming");
-					DAQmxErrorCheck(DAQmxCfgDigEdgeStartTrig(ctrTaskHandle, "/Dev1/ai/StartTrigger", DAQmx_Val_Rising), "DAQmxCfgDigEdgeStartTrig");
+					double dutyCycle = 0.2;
+					DAQmxErrorCheck(DAQmxCreateTask("CounterTask", &ctrTaskHandle), "DAQmxCreateTask");
+					DAQmxErrorCheck(DAQmxCreateCOPulseChanFreq(ctrTaskHandle, params.DAQmx_ClockOutputSignalCounter.c_str(), "cameraTriggerChannel", DAQmx_Val_Hz, DAQmx_Val_Low, initialDelay, params.DAQmx_ClockOutputSignalFreq, dutyCycle), "DAQmxCreateCOPulseChanFreq");
+					DAQmxErrorCheck(DAQmxCfgDigEdgeStartTrig(ctrTaskHandle, ctrTriggerName.c_str(), DAQmx_Val_Rising), "DAQmxCfgDigEdgeStartTrig");
+					DAQmxErrorCheck(DAQmxCfgImplicitTiming(ctrTaskHandle, DAQmx_Val_ContSamps, 1000), "DAQmxCfgImplicitTiming");				
 					//DAQmxErrorCheck(DAQmxSetExportedCtrOutEventOutputTerm(ctrTaskHandle, "/Dev1/PFI5"), "DAQmxSetExportedCtrOutEventOutputTerm");
+
+					DAQmxErrorCheck(DAQmxTaskControl(ctrTaskHandle, DAQmx_Val_Task_Verify), "DAQmxTaskControl");
+					DAQmxErrorCheck(DAQmxTaskControl(ctrTaskHandle, DAQmx_Val_Task_Commit), "DAQmxTaskControl");
+					
 				}
 
-
-				DAQmxErrorCheck(DAQmxTaskControl(ctrTaskHandle, DAQmx_Val_Task_Verify), "DAQmxTaskControl");
-				DAQmxErrorCheck(DAQmxTaskControl(ctrTaskHandle, DAQmx_Val_Task_Commit), "DAQmxTaskControl");
+				
+				
 			}
 
 			tmpBufferSize = params.DAQmx_FrameSize*params.DAQmx_ChannelCount;
@@ -169,7 +178,7 @@ namespace SdrBirdrec
 			isStreamActiveFlag = true;
 			if(params.DAQmx_ChannelCount > 0)
 			{
-				DAQmxErrorCheck(DAQmxStartTask(ctrTaskHandle), "DAQmxStartTask", false);
+				if(ctrTaskHandle) DAQmxErrorCheck(DAQmxStartTask(ctrTaskHandle), "DAQmxStartTask", false);
 				DAQmxErrorCheck(DAQmxStartTask(aiTaskHandle), "DAQmxStartTask", false);
 			}
 			else
@@ -200,7 +209,7 @@ namespace SdrBirdrec
 			if(params.DAQmx_ChannelCount > 0)
 			{
 				DAQmxErrorCheck(DAQmxStopTask(aiTaskHandle), "DAQmxStopTask", false);
-				DAQmxErrorCheck(DAQmxStopTask(ctrTaskHandle), "DAQmxStopTask", false);
+				if (ctrTaskHandle) DAQmxErrorCheck(DAQmxStopTask(ctrTaskHandle), "DAQmxStopTask", false);
 			}
 			else
 			{

@@ -1,5 +1,11 @@
 This this the changelog file for the SdrBirdrec project.
 
+Release 0.69.6 (15.01.2023)
+==========================
+
+- make NIDAQ (camera) clock signal output cofigurable
+- reduce spectrum plot rate to 2Hz
+
 Release 0.69.5 (15.12.2023)
 ==========================
 

@@ -3,7 +3,7 @@ function recorder(sdrBirdrecBackend, settings, gui_handles)
 %object and then starts the recording.
 
 %% variables
-sdrSpectrumPlotRate = 5; %how often to plot the sdr spectrum per second
+sdrSpectrumPlotRate = 2; %how often to plot the sdr spectrum per second
 spectrogramPlotRate = 1; %how often to plot the spectrogram per second
 
 fs_lf = 24000; %samplerate of the demodulated sdr channels
@@ -156,6 +156,9 @@ params.DataFile_Format = DataFile_Format;
 params.SDR_ExternalClock = settings.sdr_externalclock;
 params.DAQmx_ExternalClock = settings.daqmx_externalclock;
 params.DAQmx_ClockInputTerminal = settings.daqmx_clockterminal;
+
+params.DAQmx_ClockOutputSignalCounter = ''; %'Dev1/ctr0'; %the clock signal will be output at the default output terminal of the counter ctr0 (see the daq manual for which terminal this is) 
+params.DAQmx_ClockOutputSignalFreq = 50; %your desired clock frequency
 
 
 
