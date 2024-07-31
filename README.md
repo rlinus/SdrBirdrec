@@ -28,3 +28,5 @@ This repository contains pre-compiled shared libraries (.dll) for FFTW, PortAudi
 
 ## Licensing information
 Use, modification and distribution of SDR Birdrec is subject to the GNU General Public License v3.0. See the accompanying `LICENSE.md` file.
+
+© 2016-​2024 ETH Zurich, Linus Rüttimann
