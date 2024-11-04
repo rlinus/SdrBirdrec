@@ -1,6 +1,10 @@
 # SDR Birdrec
 SDR Birdrec is an open-source software to record FM radio signals transmitted from miniature backpacks attached to songbirds like zebra finches. It is programmed in MATLAB (GUI/frontend) and C++ (backend). Binaries are provided for 64-bit Windows.
 
+The software, in conjunction with the backpacks, serves as a tool for studying the social behavior of songbirds. Each backpack contains a microphone or an accelerometer (acting as a contact microphone), along with a battery and an FM radio transmitter.
+
+SDR Birdrec enables the demodulation and recording of radio signals from multiple backpack channels using a single SDR (software-defined radio) device. Since the carrier frequency of these radio signals tends to fluctuate, the software includes carrier frequency tracking capabilities. SDR Birdrec employs an multiband mixing and downsampling filterbank and a data-flow programming scheme for efficient channel extraction on multiple processor cores. Additionally, it supports the recording of one or more analog channels and the output of video frame trigger signals from an NI DAQ device, with clock synchronization between the SDR and NI DAQ. This feature allows for simultaneous recording from both the backpacks, stationary microphones and industrial cameras.
+
 ## Documentation
 * https://www.authorea.com/321045/Ge2ReNOERhUSYq7S_GMYRw
 
